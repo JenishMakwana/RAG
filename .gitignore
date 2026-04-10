@@ -36,6 +36,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Databases and Vector Storage
+backend/app/data/*.db
 data/*.db
 qdrant_storage/
 
