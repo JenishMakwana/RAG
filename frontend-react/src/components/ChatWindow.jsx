@@ -13,7 +13,9 @@ import {
   Users,
   FileText,
   Volume2,
-  VolumeX
+  VolumeX,
+  ChevronRight,
+  CheckCircle
 } from 'lucide-react';
 import { 
   chatQuery, 
@@ -33,7 +35,9 @@ export default function ChatWindow({
   setIsUploading,
   onUploadSuccess,
   isSidebarCollapsed,
-  setIsSidebarCollapsed
+  setIsSidebarCollapsed,
+  sessionDocuments,
+  setSessionDocuments
 }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +48,16 @@ export default function ChatWindow({
   const [speakingIdx, setSpeakingIdx] = useState(null);
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [pendingSelectionQuery, setPendingSelectionQuery] = useState(null);
+
+  const toggleFileSelection = (filename) => {
+    setSelectedFiles(prev => {
+      const exists = prev.includes(filename);
+      if (exists) return prev.filter(f => f !== filename);
+      return [...prev, filename];
+    });
+  };
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -51,8 +65,12 @@ export default function ChatWindow({
     setUploading(true);
     setIsUploading(true);
     try {
-      await uploadDocument(token, file, sessionId);
+      const result = await uploadDocument(token, file, sessionId);
       if (onUploadSuccess) onUploadSuccess();
+      const newDoc = { filename: file.name, chunks: result.chunks };
+      setSessionDocuments(prev => [...prev, newDoc]);
+      // Auto-select new document additively
+      setSelectedFiles(prev => [...new Set([...prev, file.name])]);
       setMessages(prev => [...prev, { role: 'assistant', text: `✅ Attached document: **${file.name}**` }]);
     } catch (err) {
       alert(err.message);
@@ -69,28 +87,40 @@ export default function ChatWindow({
       try {
         const data = await fetchChatHistory(token, sessionId);
         setMessages(data.history);
+        setSessionDocuments(data.documents || []);
+        setSelectedFiles([]); // Reset selection when switching chats
       } catch (err) {
         setMessages([]);
+        setSessionDocuments([]);
       } finally {
         setHistoryLoading(false);
       }
     };
     if (token && sessionId) loadHistory();
-  }, [token, sessionId, setMessages]);
+  }, [token, sessionId, setMessages, setSessionDocuments]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const submitQuery = async (queryText) => {
+  const submitQuery = async (queryText, force = false) => {
     if (!queryText.trim() || loading) return;
+
+    // Check if we need to "ask" for document focus
+    if (!force && sessionDocuments.length > 1 && selectedFiles.length === 0) {
+      setPendingSelectionQuery(queryText);
+      return;
+    }
 
     const isFirstMessage = !messages.some(m => m.role === 'user');
     setMessages(prev => [...prev, { role: 'user', text: queryText }]);
     setLoading(true);
 
     try {
-      const response = await chatQuery(token, queryText, sessionId);
+      // Send the list of selected filenames (if any)
+      const filenames = selectedFiles.length > 0 ? selectedFiles : null;
+      
+      const response = await chatQuery(token, queryText, sessionId, null, filenames);
       const aiMessage = { role: 'assistant', text: '' };
       setMessages(prev => [...prev, aiMessage]);
       
@@ -121,8 +151,17 @@ export default function ChatWindow({
   const handleSubmit = (e) => {
     e.preventDefault();
     const queryText = input;
+    if (!queryText.trim()) return;
     setInput('');
     submitQuery(queryText);
+  };
+
+  const handleConfirmSelection = () => {
+    if (pendingSelectionQuery) {
+      const queryToSubmit = pendingSelectionQuery;
+      setPendingSelectionQuery(null);
+      submitQuery(queryToSubmit, true);
+    }
   };
 
   const toggleVoice = async () => {
@@ -190,11 +229,7 @@ export default function ChatWindow({
           </button>
           <h1>Legal Case Analysis</h1>
         </div>
-        <div className="header-actions">
-           {/* Add any header actions here if needed */}
-        </div>
       </header>
-
       <div className="chat-messages">
         {historyLoading ? (
           <div className="welcome-screen">
@@ -232,7 +267,7 @@ export default function ChatWindow({
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
                   ) : m.text}
                 </div>
-                {m.role === 'assistant' && (
+                {m.role === 'assistant' && !m.text.startsWith('✅') && !m.text.includes('No documents found') && (
                   <button 
                     className={`speak-btn ${speakingIdx === i ? 'speaking' : ''}`}
                     onClick={() => handleSpeak(m.text, i)}
@@ -255,6 +290,56 @@ export default function ChatWindow({
       </div>
 
       <div className="chat-input-area">
+        {sessionDocuments.length > 0 && pendingSelectionQuery && (
+          <div className="selector-panel prompt">
+            <div className="selector-header">
+              <h3>Select focus for your question</h3>
+              <div className="selector-pagination">
+                <span>{selectedFiles.length === 0 ? 'All Documents' : `${selectedFiles.length} selected`}</span>
+              </div>
+            </div>
+            
+            <div className="selector-list">
+              <div 
+                className={`selector-item ${selectedFiles.length === 0 ? 'active' : ''}`}
+                onClick={() => setSelectedFiles([])}
+              >
+                <div className="item-number">
+                  {selectedFiles.length === 0 ? <CheckCircle size={16} /> : 1}
+                </div>
+                <div className="item-info">
+                  <span className="item-name">All Documents</span>
+                </div>
+                <ChevronRight className="item-arrow" size={18} />
+              </div>
+              
+              {sessionDocuments.map((doc, idx) => {
+                const isActive = selectedFiles.includes(doc.filename);
+                return (
+                  <div 
+                    key={idx} 
+                    className={`selector-item ${isActive ? 'active' : ''}`}
+                    onClick={() => toggleFileSelection(doc.filename)}
+                  >
+                    <div className="item-number">
+                      {isActive ? <CheckCircle size={16} /> : idx + 2}
+                    </div>
+                    <div className="item-info">
+                      <span className="item-name">{doc.filename}</span>
+                    </div>
+                    <ChevronRight className="item-arrow" size={18} />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="selector-footer">
+               <button className="selector-confirm-btn" onClick={handleConfirmSelection}>
+                 Analyze selected documents
+               </button>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="chat-input-wrapper">
           <label className="icon-btn" title="Attach Document">
             <input type="file" accept=".pdf" style={{display: 'none'}} onChange={handleUpload} disabled={loading || uploading} />
@@ -272,7 +357,12 @@ export default function ChatWindow({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isProcessingVoice ? "Processing voice..." : "Ask a question about your documents..."}
+            placeholder={
+              isProcessingVoice ? "Processing voice..." : 
+              selectedFiles.length > 0 ? `Searching in ${selectedFiles.length} unit${selectedFiles.length > 1 ? 's' : ''}...` :
+              sessionDocuments.length > 0 ? "Searching all documents..." :
+              "Ask a question about your documents..."
+            }
             disabled={loading || uploading || isProcessingVoice}
           />
           <button type="submit" className="send-btn" disabled={loading || uploading || !input.trim()}>

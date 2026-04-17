@@ -1,8 +1,8 @@
 const BASE_URL = 'http://localhost:8000';
 
-export async function login(username, password) {
+export async function login(email, password) {
   const formData = new URLSearchParams();
-  formData.append('username', username);
+  formData.append('username', email); // OAuth2 expects 'username' field
   formData.append('password', password);
 
   const response = await fetch(`${BASE_URL}/token`, {
@@ -21,13 +21,13 @@ export async function login(username, password) {
   return await response.json();
 }
 
-export async function register(username, password) {
+export async function register(username, email, password) {
   const response = await fetch(`${BASE_URL}/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, email, password }),
   });
 
   if (!response.ok) {
@@ -91,14 +91,19 @@ export async function deleteDocument(token, filename) {
   return await response.json();
 }
 
-export async function chatQuery(token, query, sessionId) {
+export async function chatQuery(token, query, sessionId, filename = null, filenames = null) {
   const response = await fetch(`${BASE_URL}/chat/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ query, session_id: sessionId }),
+    body: JSON.stringify({
+      query,
+      session_id: sessionId,
+      filename,
+      filenames
+    }),
   });
 
   if (!response.ok) {
@@ -138,6 +143,20 @@ export async function fetchChatHistory(token, sessionId) {
   return await response.json();
 }
 
+export async function fetchSessionDocuments(token, sessionId) {
+  const response = await fetch(`${BASE_URL}/documents/session/${sessionId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch session documents');
+  }
+
+  return await response.json();
+}
+
 export async function deleteChatSession(token, sessionId) {
   const response = await fetch(`${BASE_URL}/chat/session/${sessionId}`, {
     method: 'DELETE',
@@ -155,7 +174,7 @@ export async function deleteChatSession(token, sessionId) {
 
 // Voice API functions
 export async function startVoiceRecording(token) {
-  const response = await fetch(`${BASE_URL}/voice/start/`, {
+  const response = await fetch(`${BASE_URL}/voice/start`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -170,7 +189,7 @@ export async function startVoiceRecording(token) {
 }
 
 export async function stopVoiceRecording(token) {
-  const response = await fetch(`${BASE_URL}/voice/stop/`, {
+  const response = await fetch(`${BASE_URL}/voice/stop`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 from datetime import datetime
 from ..db.base_class import Base
 
@@ -9,3 +9,5 @@ class Document(Base):
     session_id = Column(String, index=True, nullable=True)
     filename = Column(String)
     upload_date = Column(DateTime, default=datetime.utcnow)
+    chunk_count = Column(Integer, nullable=True)
+    embed_time_seconds = Column(Float, nullable=True)

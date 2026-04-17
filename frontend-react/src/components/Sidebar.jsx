@@ -1,43 +1,41 @@
 import { useState, useEffect } from 'react';
-import { 
-  Plus, 
-  MessageSquare, 
-  Trash2, 
-  FileText, 
-  LogOut, 
-  Gavel, 
-  ChevronLeft 
+import {
+  Plus,
+  MessageSquare,
+  Trash2,
+  FileText,
+  LogOut,
+  Gavel,
+  ChevronLeft
 } from 'lucide-react';
-import { 
-  fetchDocuments, 
-  deleteDocument, 
-  fetchChatSessions, 
-  deleteChatSession 
+import {
+  fetchDocuments,
+  deleteDocument,
+  fetchChatSessions,
+  deleteChatSession
 } from '../api';
 
-export default function Sidebar({ 
-  token, 
-  username, 
-  onLogout, 
-  onNewChat, 
-  onSelectSession, 
-  setIsUploading, 
+export default function Sidebar({
+  token,
+  email,
+  onLogout,
+  onNewChat,
+  onSelectSession,
+  setIsUploading,
   currentSessionId,
   refreshSessions,
   isCollapsed,
-  setIsCollapsed
+  setIsCollapsed,
+  currentView,
+  onViewLibrary,
+  sessionDocuments
 }) {
-  const [documents, setDocuments] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [error, setError] = useState('');
 
   const loadData = async () => {
     try {
-      const [docsData, sessionsData] = await Promise.all([
-        fetchDocuments(token),
-        fetchChatSessions(token)
-      ]);
-      setDocuments(docsData.documents);
+      const sessionsData = await fetchChatSessions(token);
       setSessions(sessionsData.sessions);
     } catch (err) {
       setError('Failed to load data');
@@ -47,17 +45,6 @@ export default function Sidebar({
   useEffect(() => {
     if (token) loadData();
   }, [token, refreshSessions]);
-
-  const handleDeleteDoc = async (e, filename) => {
-    e.stopPropagation();
-    if (!confirm(`Delete ${filename}?`)) return;
-    try {
-      await deleteDocument(token, filename);
-      setDocuments(prev => prev.filter(doc => doc.filename !== filename));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
 
   const handleDeleteSession = async (e, sessionId) => {
     e.stopPropagation();
@@ -88,13 +75,21 @@ export default function Sidebar({
           <span>New Chat</span>
         </button>
 
+        <button
+          className={`library-nav-btn ${currentView === 'library' ? 'active' : ''}`}
+          onClick={onViewLibrary}
+        >
+          <Gavel size={18} />
+          <span>Docs Library</span>
+        </button>
+
         <div className="document-list-container">
           <div className="list-section">
             <h3>Recent Chats</h3>
             <div className="sessions-list">
               {sessions.map((session) => (
-                <div 
-                  key={session.id} 
+                <div
+                  key={session.id}
                   className={`session-item ${currentSessionId === session.id ? 'active' : ''}`}
                   onClick={() => onSelectSession(session.id)}
                 >
@@ -108,31 +103,29 @@ export default function Sidebar({
             </div>
           </div>
 
-          <div className="list-section">
-            <h3>My Library</h3>
-            {error && <div className="error" style={{fontSize: '0.7rem', color: '#ef4444', padding: '0.5rem'}}>{error}</div>}
-            {documents.map((doc) => (
-              <div key={doc.filename} className="doc-item">
-                <FileText size={16} />
-                <div className="doc-info">
-                  <div className="doc-name">{doc.filename}</div>
-                  <div className="doc-date">{new Date(doc.date).toLocaleDateString()}</div>
+          {sessionDocuments && sessionDocuments.length > 0 && (
+            <div className="list-section">
+              <h3>Active Documents</h3>
+              {sessionDocuments.map((doc) => (
+                <div key={doc.filename} className="doc-item academic">
+                  <FileText size={16} />
+                  <div className="doc-info">
+                    <div className="doc-name">{doc.filename}</div>
+                    {doc.chunks && <div className="doc-date">{doc.chunks} Chunks</div>}
+                  </div>
                 </div>
-                <button className="delete-btn" onClick={(e) => handleDeleteDoc(e, doc.filename)}>
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="sidebar-footer">
           <div className="user-profile">
             <div className="user-avatar">
-              {username ? username[0].toUpperCase() : 'U'}
+              {email ? email[0].toUpperCase() : 'U'}
             </div>
             <div className="user-info">
-              <div className="username-display">{username || 'User'}</div>
+              <div className="username-display">{email || 'User'}</div>
               <button className="logout-btn" onClick={onLogout}>
                 Sign Out
               </button>

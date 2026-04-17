@@ -88,9 +88,13 @@ class VoiceService:
         return tmp.name
 
     def preload_models(self):
-        """Preloads the ASR model into memory/GPU."""
+        """Preloads ASR and TTS models into memory/GPU."""
         print(f"Loading Qwen3-ASR...")
         self._load_asr_model()
+        
+        print(f"Loading Kokoro TTS...")
+        from .tts import get_kokoro_pipeline
+        get_kokoro_pipeline()
 
     def _load_asr_model(self):
         if self._asr_model:

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+# Reference: https://fastapi.tiangolo.com/tutorial/security/
 from typing import Any, Union
 from jose import jwt
 from passlib.context import CryptContext

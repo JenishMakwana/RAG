@@ -4,6 +4,8 @@ from .api.api_v1.api import api_router
 from .core.config import settings
 from .db.init_db import init_sqlite, init_qdrant
 import uvicorn
+import threading
+from .services.voice_service import voice_service
 
 
 app = FastAPI(title=settings.PROJECT_NAME)
@@ -20,7 +22,8 @@ app.add_middleware(
 async def startup_event():
     init_sqlite()
     init_qdrant()
-    # Speech models will be lazily loaded on first use to avoid startup delays
+    # Preload ASR/TTS models in a background thread to avoid blocking startup
+    threading.Thread(target=voice_service.preload_models, daemon=True).start()
 
 app.include_router(api_router)
 

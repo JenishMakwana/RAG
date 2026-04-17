@@ -1,5 +1,6 @@
 import uuid
 import os
+import time
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
 from sqlalchemy.orm import Session
 from langchain_core.documents import Document as LCDocument
@@ -19,7 +20,7 @@ async def upload_document(
     file: UploadFile = File(...), 
     session_id: str = Form(None),
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user)
+    current_user: User = Depends(deps.get_current_active_user)
 ):
     query = db.query(Document).filter(
         Document.user_id == str(current_user.id),
@@ -37,6 +38,7 @@ async def upload_document(
     with open(temp_path, "wb") as buffer:
         buffer.write(await file.read())
     
+    start_time = time.time()
     try:
         chunks = process_pdf(temp_path, current_user.id, file.filename, session_id)
         if not chunks:
@@ -51,27 +53,71 @@ async def upload_document(
         docs = [LCDocument(page_content=c["text"], metadata=c["metadata"]) for c in chunks]
         vector_store.add_documents(docs)
         
-        new_doc = Document(user_id=str(current_user.id), filename=file.filename, session_id=session_id)
+        embed_time = time.time() - start_time
+        new_doc = Document(
+            user_id=str(current_user.id), 
+            filename=file.filename, 
+            session_id=session_id,
+            chunk_count=len(chunks),
+            embed_time_seconds=round(embed_time, 2)
+        )
         db.add(new_doc)
         db.commit()
-        return {"message": f"Successfully indexed {file.filename}"}
+        return {
+            "message": f"Successfully indexed {file.filename}",
+            "chunks": len(chunks),
+            "time": round(embed_time, 2)
+        }
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
 @router.get("/")
-def get_user_documents(db: Session = Depends(deps.get_db), current_user: User = Depends(deps.get_current_user)):
-    docs = db.query(Document).filter(Document.user_id == str(current_user.id)).all()
+def get_user_documents(db: Session = Depends(deps.get_db), current_user: User = Depends(deps.get_current_active_user)):
+    from ....models.chat import ChatSession
+    
+    # Efficiently join Document and ChatSession to avoid N+1 queries (lookup speed-up)
+    query_results = db.query(Document, ChatSession.title).outerjoin(
+        ChatSession, Document.session_id == ChatSession.id
+    ).filter(Document.user_id == str(current_user.id)).all()
+    
+    results = []
+    for doc, chat_title in query_results:
+        results.append({
+            "id": doc.id,
+            "filename": doc.filename,
+            "date": doc.upload_date,
+            "session_id": doc.session_id,
+            "session_title": chat_title or "Direct Upload",
+            "chunks": doc.chunk_count or 0,
+            "embed_time": doc.embed_time_seconds or 0
+        })
+    return {"documents": results}
+
+@router.get("/session/{session_id}")
+def get_session_documents(
+    session_id: str, 
+    db: Session = Depends(deps.get_db), 
+    current_user: User = Depends(deps.get_current_active_user)
+):
+    docs = db.query(Document).filter(
+        Document.user_id == str(current_user.id),
+        Document.session_id == session_id
+    ).all()
     return {
-        "documents": [{"filename": d.filename, "date": d.upload_date, "session_id": d.session_id} for d in docs]
+        "documents": [{"filename": d.filename, "chunks": d.chunk_count} for d in docs]
     }
 
 @router.delete("/{filename}")
-def delete_document(filename: str, db: Session = Depends(deps.get_db), current_user: User = Depends(deps.get_current_user)):
-    doc = db.query(Document).filter(Document.user_id == str(current_user.id), Document.filename == filename).first()
-    if doc:
+def delete_document(filename: str, db: Session = Depends(deps.get_db), current_user: User = Depends(deps.get_current_active_user)):
+    # Find all variants (different sessions) of this filename for this user
+    docs = db.query(Document).filter(Document.user_id == str(current_user.id), Document.filename == filename).all()
+    if not docs:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    for doc in docs:
         db.delete(doc)
-        db.commit()
+    db.commit()
     
     q_client.delete(
         collection_name=COLLECTION_NAME,
@@ -82,4 +128,4 @@ def delete_document(filename: str, db: Session = Depends(deps.get_db), current_u
             ]
         )
     )
-    return {"message": f"Deleted {filename}"}
+    return {"message": f"Deleted all instances of {filename}"}

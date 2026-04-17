@@ -8,7 +8,7 @@ from ..core.config import settings
 from ..db.session import SessionLocal
 from ..models.user import User
 from ..schemas.token import TokenPayload
-
+# Reference: https://fastapi.tiangolo.com/tutorial/security/
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"/token")
 
 def get_db() -> Generator:
@@ -36,7 +36,14 @@ async def get_current_user(
         token_data = TokenPayload(sub=username)
     except JWTError:
         raise credentials_exception
-    user = db.query(User).filter(User.username == token_data.sub).first()
+    user = db.query(User).filter(User.email == token_data.sub).first()
     if not user:
         raise credentials_exception
     return user
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user

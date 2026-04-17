@@ -1,5 +1,6 @@
 import os
 import logging
+import torch
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
@@ -15,11 +16,20 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 
 class RAGService:
     def __init__(self):
-        print(f"Loading {settings.EMBEDDING_MODEL_NAME}...")
-        self.embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL_NAME)
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Loading {settings.EMBEDDING_MODEL_NAME} on {device}...")
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=settings.EMBEDDING_MODEL_NAME,
+            model_kwargs={"device": device}
+        )
         
-        print(f"Loading {settings.RERANKER_MODEL_NAME}...")
-        self.reranker = CrossEncoder(settings.RERANKER_MODEL_NAME, trust_remote_code=True)
+        print(f"Loading {settings.RERANKER_MODEL_NAME} on {device}...")
+        self.reranker = CrossEncoder(
+            settings.RERANKER_MODEL_NAME, 
+            trust_remote_code=True,
+            device=device,
+            automodel_args={"torch_dtype": torch.float16}
+        )
         
         # Initialize LLM
         self.llm = self._setup_llm()
@@ -77,7 +87,9 @@ class RAGService:
         1. Base your answer strictly on context.
         2. MISSING INFO: Answer naturally based ONLY on context, don't use repetitive disclaimers.
         3. LEGAL ONLY: If context isn't legal, refuse.
-        4. CITATION: One consolidated citation at the end: [Source: filename, Page: x]
+        4. CITATION: Use exactly one consolidated citation at the end. List EVERY unique page number found in the context for each source. 
+           Format: [Source: filename, Pages: 1, 4, 9]
+           NEVER use "various", "multiple", or "etc". If multiple pages apply, list them all.
         5. STYLE: Plain text only. No markdown, no bold, no lists.
         """
         prompts = {

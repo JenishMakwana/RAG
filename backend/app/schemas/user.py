@@ -3,9 +3,11 @@ from pydantic import BaseModel, ConfigDict
 
 class UserBase(BaseModel):
     username: Optional[str] = None
+    email: Optional[str] = None
 
 class UserCreate(UserBase):
     username: str
+    email: str
     password: str
 
 class UserUpdate(UserBase):

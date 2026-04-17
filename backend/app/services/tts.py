@@ -6,26 +6,59 @@ import io
 import numpy as np
 import sounddevice as sd
 import re
+import datetime
 
 warnings.filterwarnings("ignore")
 
 
 _kokoro_pipeline = None
 _qwen_tts_model = None
+SPEECH_SPEED = 0.8  # Slower than default 1.0
 
 def clean_text_for_speech(text: str) -> str:
-    """Removes citations and other non-spoken markers from text."""
+    """Removes citations and other non-spoken markers from text, and formats dates."""
     if not text:
         return ""
-    # Remove [Source: ..., Page: ...] patterns
-    text = re.sub(r'\[\s*Source:[^\]]*\]', '', text)
-    # Remove [Source: ..., Page: ...] with optional parentheses
-    text = re.sub(r'\(\s*Source:[^)]*\)', '', text)
-    # Remove [1], [2], etc.
+    
+    # 1. Format Dates (DD.MM.YYYY -> Month Day, Year)
+    date_pattern = r'\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b'
+    
+    def date_replacer(match):
+        d_str, m_str, y_str = match.groups()
+        try:
+            d, m, y = int(d_str), int(m_str), int(y_str)
+            dt = datetime.date(y, m, d)
+            return dt.strftime("%B %d, %Y")
+        except:
+            return match.group(0)
+    
+    text = re.sub(date_pattern, date_replacer, text)
+
+    # 2. Aggressive Source Removal
+    # Matches anything in brackets/parens that looks like a PDF reference or Page citation
+    source_patterns = [
+        r'\[[^\]]*?(?:\.pdf|Pages?:|Source:)[^\]]*?\]',
+        r'\([^)]*?(?:\.pdf|Pages?:|Source:)[^)]*?\)'
+    ]
+    for pattern in source_patterns:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # 3. Fix All-Caps Pronunciation (e.g., SUNITA -> Sunita)
+    # TTS engines often spell out ALL CAPS words letter-by-letter. 
+    # Converting words > 2 chars to Title Case fixes this.
+    def to_title_case(match):
+        word = match.group(0)
+        if len(word) > 2:
+            return word.capitalize()
+        return word
+    
+    text = re.sub(r'\b[A-Z]{3,}\b', to_title_case, text)
+
+    # 4. Remove standard citation markers [1], (1)
     text = re.sub(r'\[\d+\]', '', text)
-    # Remove (1), (2), etc.
     text = re.sub(r'\(\d+\)', '', text)
-    # Remove any extra whitespace created
+    
+    # Cleanup extra whitespace
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -140,7 +173,7 @@ def audio_generate(text):
     _player.start()
     
     # 🔊 Generate chunks asynchronously
-    generator = pipeline(text, voice=voice)
+    generator = pipeline(text, voice=voice, speed=SPEECH_SPEED)
 
     for i, (gs, ps, audio) in enumerate(generator):
         if _player.stop_event.is_set():
@@ -154,7 +187,7 @@ def get_tts_wav(text):
     voice = "af_sarah"   
     
     # Generate all chunks
-    generator = pipeline(text, voice=voice)
+    generator = pipeline(text, voice=voice, speed=SPEECH_SPEED)
     all_chunks = []
     for gs, ps, audio in generator:
         all_chunks.append(audio)

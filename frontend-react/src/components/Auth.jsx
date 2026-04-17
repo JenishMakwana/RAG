@@ -5,6 +5,7 @@ import { login, register } from '../api';
 export default function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,12 +17,12 @@ export default function Auth({ onLoginSuccess }) {
 
     try {
       if (isLogin) {
-        const data = await login(username, password);
-        onLoginSuccess(data.access_token, username);
+        const data = await login(email, password);
+        onLoginSuccess(data.access_token, email);
       } else {
-        await register(username, password);
-        const data = await login(username, password);
-        onLoginSuccess(data.access_token, username);
+        await register(username, email, password);
+        const data = await login(email, password);
+        onLoginSuccess(data.access_token, email);
       }
     } catch (err) {
       setError(err.message);
@@ -46,14 +47,27 @@ export default function Auth({ onLoginSuccess }) {
         </p>
         
         <form onSubmit={handleSubmit}>
+          {!isLogin && (
+            <div className="form-group">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Case Manager ID"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+          )}
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="username"
-              type="text"
-              placeholder="Case Manager ID"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="lawyer@firm.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -79,7 +93,7 @@ export default function Auth({ onLoginSuccess }) {
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
-        
+
         <p className="toggle-auth">
           {isLogin ? "New to Case Assistant? " : "Already have an account? "}
           <span onClick={() => setIsLogin(!isLogin)}>
