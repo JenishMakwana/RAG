@@ -57,7 +57,6 @@ class RAGService:
                 max_retries=settings.LLM_MAX_RETRIES
             )
 
-    @traceable
     def rerank_results(self, query, candidates):
         if not candidates:
             return []
@@ -88,9 +87,9 @@ class RAGService:
         1. Base your answer strictly on context.
         2. MISSING INFO: Answer naturally based ONLY on context, don't use repetitive disclaimers.
         3. LEGAL ONLY: If context isn't legal, refuse.
-        4. CITATION: Use exactly one consolidated citation at the end, ALWAYS separated by TWO newlines from the final sentence. 
-           Format: \n\n[Source: filename, Pages: 1, 4, 9]
-           NEVER use "various", "multiple", or "etc". List every unique page number found in the context for each source.
+        4. CITATION: Use exactly one consolidated citation at the end. List EVERY unique page number found in the context for each source. 
+           Format: [Source: filename, Pages: 1, 4, 9]
+           NEVER use "various", "multiple", or "etc". If multiple pages apply, list them all.
         5. STYLE: Plain text only. No markdown, no bold, no lists.
         """
         prompts = {
@@ -102,7 +101,6 @@ class RAGService:
         }
         return prompts.get(intent, prompts["GENERAL"])
 
-    @traceable
     async def generate_answer_stream(self, query, context_list, source_documents=None, trace_metadata=None):
         intent = self.detect_intent(query)
         context_str = "\n\n".join(context_list)
@@ -114,7 +112,7 @@ class RAGService:
             HumanMessage(content=user_prompt)
         ]
         
-        async for chunk in self.llm.astream(messages, config={"metadata": trace_metadata}):
+        async for chunk in self.llm.astream(messages):
             yield chunk.content
 
     def validate_is_legal(self, text_sample: str) -> bool:

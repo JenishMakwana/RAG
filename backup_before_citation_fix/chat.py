@@ -111,21 +111,7 @@ async def query_chat(chat_data: ChatQuery, db: Session = Depends(deps.get_db), c
 
     async def response_generator():
         full_answer = ""
-        async for chunk in rag_service.generate_answer_stream(
-            chat_data.query, 
-            context_list, 
-            trace_metadata={
-                "user_id": user_id_str, 
-                "session_id": chat_data.session_id,
-                "active_llm": settings.ACTIVE_LLM,
-                "llm_model": settings.LLM_MODEL_NAME if settings.ACTIVE_LLM == "gemini" else (
-                    settings.GROQ_MODEL_NAME if settings.ACTIVE_LLM == "groq" else settings.OLLAMA_MODEL_NAME
-                ),
-                "search_k": settings.SEARCH_K,
-                "rerank_top_k": settings.RERANK_TOP_K,
-                "temperature": settings.LLM_TEMPERATURE
-            }
-        ):
+        async for chunk in rag_service.generate_answer_stream(chat_data.query, context_list):
             full_answer += chunk
             yield chunk
         with SessionLocal() as final_db:

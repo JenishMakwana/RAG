@@ -1135,13 +1135,3 @@ h3,
   color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
-.message-citation {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--glass-border);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-family: 'Inter', sans-serif;
-  font-style: italic;
-  line-height: 1.4;
-}

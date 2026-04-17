@@ -59,29 +59,6 @@ export default function ChatWindow({
     });
   };
 
-  const renderMessageContent = (text) => {
-    if (!text || typeof text !== 'string') return text;
-    
-    // Check for source citation
-    const sourceMarker = '[Source:';
-    if (text.includes(sourceMarker)) {
-      const parts = text.split(sourceMarker);
-      const content = parts[0];
-      const source = sourceMarker + parts.slice(1).join(sourceMarker); // Rejoin in case of multiple markers (fallback)
-      
-      return (
-        <>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-          <div className="message-citation">
-            {source}
-          </div>
-        </>
-      );
-    }
-    
-    return <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>;
-  };
-
   const handleUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -287,7 +264,7 @@ export default function ChatWindow({
               <div key={i} className={`message-bubble ${m.role}`}>
                 <div className="message-content">
                   {m.role === 'assistant' ? (
-                    renderMessageContent(m.text)
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
                   ) : m.text}
                 </div>
                 {m.role === 'assistant' && !m.text.startsWith('✅') && !m.text.includes('No documents found') && (

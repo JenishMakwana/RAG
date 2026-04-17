@@ -1,6 +1,5 @@
 import os
 import fitz  # PyMuPDF
-import datetime
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ..core.config import settings
 
@@ -20,13 +19,9 @@ def process_pdf(pdf_path: str, user_id: str, original_filename: str, session_id:
     )
     
     chunks_with_metadata = []
-    chunk_idx = 0
-    ingestion_time = datetime.datetime.now().isoformat()
     try:
         with fitz.open(pdf_path) as pdf:
-            total_pages = len(pdf)
             for page_num, page in enumerate(pdf, start=1):
-                # ... [rect and thresholds code omitted for brevity but preserved in actual replacement] ...
                 page_rect = page.rect
                 footer_threshold = page_rect.height * 0.97 
                 header_threshold = page_rect.height * 0.03
@@ -50,19 +45,11 @@ def process_pdf(pdf_path: str, user_id: str, original_filename: str, session_id:
                 for p_chunk in parent_chunks:
                     child_chunks = child_splitter.split_text(p_chunk)
                     for c_chunk in child_chunks:
-                        chunk_idx += 1
                         metadata = {
                             "page": page_num,
-                            "total_pages": total_pages,
-                            "chunk_number": chunk_idx,
                             "user_id": str(user_id),
                             "filename": original_filename,
-                            "parent_text": p_chunk,
-                            "ingestion_timestamp": ingestion_time,
-                            "embedding_model": settings.EMBEDDING_MODEL_NAME,
-                            "chunk_size": settings.CHILD_CHUNK_SIZE,
-                            "chunk_overlap": settings.CHILD_CHUNK_OVERLAP,
-                            "file_type": "pdf"
+                            "parent_text": p_chunk
                         }
                         if session_id:
                             metadata["session_id"] = session_id
