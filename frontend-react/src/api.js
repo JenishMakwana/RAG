@@ -204,7 +204,7 @@ export async function stopVoiceRecording(token) {
   return await response.json();
 }
 
-export async function getTtsAudio(token, text) {
+export async function getTtsAudio(token, text, signal) {
   const response = await fetch(`${BASE_URL}/chat/speak`, {
     method: 'POST',
     headers: {
@@ -212,6 +212,7 @@ export async function getTtsAudio(token, text) {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ text }),
+    signal
   });
 
   if (!response.ok) {
@@ -219,5 +220,5 @@ export async function getTtsAudio(token, text) {
     throw new Error(error.detail || 'TTS request failed');
   }
 
-  return await response.blob();
+  return response;
 }

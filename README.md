@@ -1,79 +1,70 @@
-# Legal Case RAG Assistant
+# Legal Case Law RAG Assistant ⚖️
 
-A premium Retrieval-Augmented Generation (RAG) application designed for legal researchers and practitioners. This tool allows users to upload legal documents (PDFs), chat with them using advanced LLMs, and interact via voice.
+A professional, high-performance Retrieval-Augmented Generation (RAG) platform tailored for legal researchers. This application combines state-of-the-art LLMs with a proprietary legal search engine to provide precise, citation-backed analysis of case law.
 
-## 🌟 Features
+## 🌟 Key Features
 
-- **Legal-First RAG**: High-precision retrieval using Qdrant and specialized legal embeddings.
-- **Smart Intent Detection**: Automatically identifies if you are asking for a summary, judgment, facts, or legal reasoning.
-- **Voice Interaction**:
-  - **ASR (Speech-to-Text)**: Powered by Qwen-ASR for accurate legal terminology.
-  - **TTS (Text-to-Speech)**: Integrated with Kokoro-82M for natural-sounding responses (citations are automatically filtered for a better listening experience).
-- **Secure Authentication**: JWT-based login and session management.
-- **Modern UI**: A responsive, dark-mode glassmorphism interface built with React.
-- **Streaming Responses**: Get real-time answers as they are generated.
+- **Legal-Specific RAG**: High-fidelity retrieval utilizing **Qdrant** and specialized legal embeddings (`InCaseLawBERT`).
+- **Parent-Child Chunking**: Maintains document context while allowing for granular retrieval of specific legal clauses.
+- **Premium Voice Experience**:
+  - **Seamless TTS Highlighting**: Real-time "karaoke-style" word highlighting synchronized with audio playback.
+  - **Kokoro-82M Engine**: Ultra-natural, low-latency speech generation.
+  - **Citation Filtering**: Audio automatically skips citations and Markdown symbols for a clean listening experience.
+- **Streaming Intelligence**: Multi-document analysis with real-time response streaming and deterministic citations.
+- **Modern Architecture**:
+  - **Backend**: FastAPI with async execution and JWT security.
+  - **Frontend**: React-based Glassmorphism UI with persistent session management.
 
 ## 🛠️ Technology Stack
 
-### Backend
-- **Framework**: FastAPI
-- **Database**: SQLite (SQLAlchemy) & Qdrant (Vector Database)
-- **AI/LLM**: LangChain, Groq, Google Gemini, Ollama
-- **Audio**: Kokoro-82M (TTS), Qwen-ASR (Speech Recognition)
-
-### Frontend
-- **Framework**: React.js (Vite)
-- **Styling**: Vanilla CSS with modern Glassmorphism aesthetics
-- **API**: Fetch API with streaming support
+- **Python**: 3.12.10
+- **Vector Store**: Qdrant (Persistent Storage)
+- **Frameworks**: FastAPI, React.js (Vite)
+- **AI Models**: Gemini 2.0/2.5, Groq (Llama 3), Ollama
+- **Audio Stack**: Kokoro-82M (TTS), Qwen-ASR (Speech Recognition)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.12+
 - Node.js & npm
-- [Qdrant](https://qdrant.tech/) (Running locally or on Cloud)
+- Qdrant Instance (Local or Cloud)
 
-### Backend Setup
-1. Clone the repository.
-2. Create a virtual environment:
+### 1. Backend Setup
+1. Create and activate a virtual environment:
    ```bash
    python -m venv myenv
-   source myenv/bin/activate  # On Windows: myenv\Scripts\activate
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure environment variables in `.env`:
-   ```env
-   GEMINI_API_KEY=your_key
-   GROQ_API_KEY=your_key
-   QDRANT_URL=http://localhost:6333
-   ```
-5. Start the server:
-   ```bash
-   uvicorn backend.app.main:app --reload
-   ```
-
-### Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend-react
+   myenv\Scripts\activate
    ```
 2. Install dependencies:
    ```bash
-   npm install
+   pip install -r requirements.txt
    ```
-3. Start the development server:
+3. Configure your keys:
+   - Copy `.env.example` to `.env`.
+   - Fill in your `GEMINI_API_KEY` or `GROQ_API_KEY`.
+4. Run the server:
    ```bash
+   cd backend
+   uvicorn app.main:app --reload
+   ```
+
+### 2. Frontend Setup
+1. Navigate to the frontend:
+   ```bash
+   cd frontend-react
+   ```
+2. Install & Start:
+   ```bash
+   npm install
    npm run dev
    ```
 
-## 🧪 Testing
-Run the automated test suite to verify API and AI logic:
-```bash
-pytest tests/test_api.py
-```
+## 📂 Project Organization
+- `/backend`: FastAPI source code and local data/vector storage.
+- `/frontend-react`: React application source and styling.
+- `/requirements.txt`: Unified dependency list with critical version locks.
+- `/.env.example`: Clean template for environment configuration.
 
-## 📜 License
-Internal Project - All Rights Reserved.
+---
+**License**: Internal Project / Proprietary

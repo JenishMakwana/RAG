@@ -93,8 +93,8 @@ class VoiceService:
         self._load_asr_model()
         
         print(f"Loading Kokoro TTS...")
-        from .tts import get_kokoro_pipeline
-        get_kokoro_pipeline()
+        from .tts import warm_up_tts
+        warm_up_tts()
 
     def _load_asr_model(self):
         if self._asr_model:

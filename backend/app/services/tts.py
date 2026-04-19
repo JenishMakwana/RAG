@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 _kokoro_pipeline = None
 _qwen_tts_model = None
-SPEECH_SPEED = 0.8  # Slower than default 1.0
+SPEECH_SPEED = 1  # Slower than default 1.0
 
 def clean_text_for_speech(text: str) -> str:
     """Removes citations and other non-spoken markers from text, and formats dates."""
@@ -204,6 +204,115 @@ def get_tts_wav(text):
     sf.write(buffer, full_audio, 24000, format='WAV')
     buffer.seek(0)
     return buffer.read()
+
+def stream_tts_wav_chunks(text, cancel_event=None):
+    # Important: Do NOT clean the entire block at once. 
+    # We need to keep the raw sentence for the frontend highlighter.
+    pipeline = get_kokoro_pipeline()
+    voice = "af_sarah"   
+    # 1. Split RAW text into sentences while protecting legal abbreviations
+    # Standard Python 're' doesn't support variable-width lookbehind, 
+    # so we use a 'Protection' strategy.
+    protected_text = text
+    abbreviations = ['No', 'v', 'vs', 'Art', 'Sec', 'para', 'exh', 'cl', 'st', 'adv', 'cr', 'rev', 'app', 'spl', 'petn', 'writ', 'pil', 'scc', 'air', 'scr', 'ilr', 'guj', 'bom', 'del', 'Mr', 'Mrs', 'Ms', 'Dr', 'Justice', 'Hon', 'Honble', 'Honourable', 'Chief']
+    
+    # Temporarily hide the periods in abbreviations
+    for abbr in abbreviations:
+        # Match 'No.' but not 'No' inside a word
+        protected_text = re.sub(rf'\b{abbr}\.', f'{abbr}@@@', protected_text, flags=re.IGNORECASE)
+    
+    # Protect Initials (e.g., D.N. Ray)
+    # This matches a single capital letter followed by a period
+    protected_text = re.sub(r'\b([A-Z])\.', r'\1@@@', protected_text)
+    
+    # Now split safely
+    split_chunks = re.split(r'(?<=[.!?])\s+', protected_text)
+    
+    # Restore the periods and clean up
+    raw_sentences = []
+    for chunk in split_chunks:
+        s = chunk.replace('@@@', '.').strip()
+        if s:
+            raw_sentences.append(s)
+    
+    if not raw_sentences:
+        return
+
+    import soundfile as sf
+    import io
+    import base64
+    import json
+    import threading
+    import queue
+
+    import numpy as np
+    q = queue.Queue(maxsize=10)
+    stop_signal = threading.Event()
+
+    def producer():
+        try:
+            for s_raw in raw_sentences:
+                # Check ALL stop conditions: internal stop, global stop, or client disconnect
+                if stop_signal.is_set() or _player.stop_event.is_set() or (cancel_event and cancel_event.is_set()):
+                    break
+                
+                # 2. Clean ONLY for speech engine
+                s_clean = clean_text_for_speech(s_raw)
+                if not s_clean:
+                    continue
+
+                generator = pipeline(s_clean, voice=voice, speed=SPEECH_SPEED)
+                sentence_audio_chunks = []
+                for gs, ps, audio in generator:
+                    if (cancel_event and cancel_event.is_set()) or _player.stop_event.is_set():
+                        break
+                    sentence_audio_chunks.append(audio)
+                
+                if sentence_audio_chunks:
+                    # Aggregate all grains of the sentence into ONE continuous array
+                    # This eliminates breaks/pauses inside the sentence.
+                    full_audio = np.concatenate(sentence_audio_chunks)
+                    
+                    buffer = io.BytesIO()
+                    sf.write(buffer, full_audio, 24000, format='WAV')
+                    buffer.seek(0)
+                    audio_bytes = buffer.read()
+                    q.put((s_raw, audio_bytes))
+            q.put(None)
+        except Exception as e:
+            print(f"TTS Producer error: {e}")
+            q.put(None)
+
+    worker = threading.Thread(target=producer, daemon=True)
+    worker.start()
+
+    try:
+        while True:
+            item = q.get()
+            if item is None:
+                break
+            
+            s, audio_bytes = item
+            audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            # Yield as NDJSON event with text metadata for highlighting
+            yield json.dumps({"audio": audio_b64, "text": s}) + "\n"
+    finally:
+        stop_signal.set()
+        # Drain the queue if needed
+        while not q.empty():
+            q.get_nowait()
+
+def warm_up_tts():
+    """Initializes the TTS pipeline with a dummy generation to remove cold-start latency."""
+    print("Pre-warming TTS Engine...")
+    try:
+        pipeline = get_kokoro_pipeline()
+        # Single very short generation to trigger model weights loading
+        list(pipeline("Warmup.", voice="af_sarah", speed=1.0))
+        print("TTS Engine warmed up and ready.")
+    except Exception as e:
+        print(f"TTS Warmup failed: {e}")
 
 def stop_audio():
     _player.stop()

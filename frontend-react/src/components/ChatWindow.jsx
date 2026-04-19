@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { 
   Send, 
   Paperclip, 
@@ -26,6 +27,8 @@ import {
   getTtsAudio
 } from '../api';
 
+// ... (existing functions)
+
 export default function ChatWindow({ 
   token, 
   messages, 
@@ -50,6 +53,35 @@ export default function ChatWindow({
   const audioRef = useRef(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [pendingSelectionQuery, setPendingSelectionQuery] = useState(null);
+  
+  // TTS Highlighting State
+  const [highlightedInfo, setHighlightedInfo] = useState({ 
+    msgIdx: null, 
+    sentence: null, 
+    wordIdx: -1 
+  });
+  const highlightTimerRef = useRef(null);
+
+  /**
+   * Injects <mark> tags into raw markdown while preserving formatting.
+   * This handles the core logic of 'Seamless Highlighting'
+   */
+  const injectHighlighting = (rawText, msgIdx) => {
+    if (highlightedInfo.msgIdx !== msgIdx || !highlightedInfo.sentence) {
+      return rawText;
+    }
+
+    const { sentence } = highlightedInfo;
+    
+    // Find the exact sentence block. 
+    const sentencePos = rawText.indexOf(sentence);
+    if (sentencePos === -1) return rawText;
+
+    const highlightedSentence = `<mark class="highlight-sentence">${sentence}</mark>`;
+    const before = rawText.substring(0, sentencePos);
+    const after = rawText.substring(sentencePos + sentence.length);
+    return before + highlightedSentence + after;
+  };
 
   const toggleFileSelection = (filename) => {
     setSelectedFiles(prev => {
@@ -59,44 +91,88 @@ export default function ChatWindow({
     });
   };
 
-  const renderMessageContent = (text) => {
+  const renderMessageContent = (text, msgIdx) => {
     if (!text || typeof text !== 'string') return text;
     
-    // Check for source citation
     const sourceMarker = '[Source:';
+    let content = text;
+    let source = '';
+
     if (text.includes(sourceMarker)) {
       const parts = text.split(sourceMarker);
-      const content = parts[0];
-      const source = sourceMarker + parts.slice(1).join(sourceMarker); // Rejoin in case of multiple markers (fallback)
-      
-      return (
-        <>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      content = parts[0];
+      source = sourceMarker + parts.slice(1).join(sourceMarker);
+    }
+
+    const processedContent = injectHighlighting(content, msgIdx);
+
+    return (
+      <>
+        <ReactMarkdown 
+          remarkPlugins={[remarkGfm]} 
+          rehypePlugins={[rehypeRaw]}
+        >
+          {processedContent}
+        </ReactMarkdown>
+        {source && (
           <div className="message-citation">
             {source}
           </div>
-        </>
-      );
-    }
-    
-    return <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>;
+        )}
+      </>
+    );
   };
 
   const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
     setUploading(true);
     setIsUploading(true);
+    
     try {
-      const result = await uploadDocument(token, file, sessionId);
-      if (onUploadSuccess) onUploadSuccess();
-      const newDoc = { filename: file.name, chunks: result.chunks };
-      setSessionDocuments(prev => [...prev, newDoc]);
-      // Auto-select new document additively
-      setSelectedFiles(prev => [...new Set([...prev, file.name])]);
-      setMessages(prev => [...prev, { role: 'assistant', text: `✅ Attached document: **${file.name}**` }]);
+      const results = await Promise.allSettled(
+        files.map(async (file) => {
+          try {
+            const result = await uploadDocument(token, file, sessionId);
+            return { file, result, success: true };
+          } catch (err) {
+            return { file, error: err.message, success: false };
+          }
+        })
+      );
+
+      const successful = results.filter(r => r.value && r.value.success);
+      const failed = results.filter(r => (r.value && !r.value.success) || r.status === 'rejected');
+
+      if (successful.length > 0) {
+        if (onUploadSuccess) onUploadSuccess();
+        
+        const newDocs = successful.map(r => ({ 
+          filename: r.value.file.name, 
+          chunks: r.value.result.chunks 
+        }));
+        
+        setSessionDocuments(prev => [...prev, ...newDocs]);
+        
+        const successMsg = successful.length === 1 
+          ? `✅ Attached document: **${successful[0].value.file.name}**`
+          : `✅ Attached **${successful.length}** documents successfully.`;
+        
+        setMessages(prev => [...prev, { role: 'assistant', text: successMsg }]);
+      }
+
+      if (failed.length > 0) {
+        const errorMsg = failed.map(r => {
+          const name = r.value?.file?.name || "Unknown file";
+          const error = r.value?.error || "Upload failed";
+          return `- ${name}: ${error}`;
+        }).join('\n');
+        
+        setMessages(prev => [...prev, { role: 'error', text: `Failed to upload some documents:\n${errorMsg}` }]);
+      }
     } catch (err) {
-      alert(err.message);
+      alert("An unexpected error occurred during upload.");
     } finally {
       setUploading(false);
       setIsUploading(false);
@@ -210,32 +286,121 @@ export default function ChatWindow({
     }
   };
 
-  const handleSpeak = async (text, index) => {
-    if (speakingIdx === index) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        setSpeakingIdx(null);
-      }
+  const audioQueueRef = useRef([]);
+  const abortControllerRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Play next item in queue
+  const playNextInQueue = () => {
+    if (highlightTimerRef.current) clearInterval(highlightTimerRef.current);
+    
+    if (audioQueueRef.current.length === 0) {
+      setIsPlaying(false);
+      setSpeakingIdx(null);
+      setHighlightedInfo({ msgIdx: null, sentence: null, wordIdx: -1 });
       return;
     }
 
-    setSpeakingIdx(index);
-    try {
-      const blob = await getTtsAudio(token, text);
-      const url = URL.createObjectURL(blob);
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        setSpeakingIdx(null);
-        URL.revokeObjectURL(url);
-      };
-      await audio.play();
-    } catch (err) {
-      console.error(err);
+    const { audioObj, url, text: sentenceText } = audioQueueRef.current.shift();
+    audioRef.current = audioObj;
+    setIsPlaying(true);
+
+    audioObj.onplay = () => {
+      setHighlightedInfo(prev => ({ 
+        ...prev, 
+        sentence: sentenceText,
+        wordIdx: 0 
+      }));
+    };
+
+    audioObj.onended = () => {
+      URL.revokeObjectURL(url);
+      playNextInQueue();
+    };
+
+    audioObj.play().catch(err => {
+      console.error("Playback error", err);
+      playNextInQueue();
+    });
+  };
+
+  const handleSpeak = async (text, index) => {
+    // If clicking same button while playing, STOP everything
+    if (speakingIdx === index) {
+      if (audioRef.current) audioRef.current.pause();
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      
+      audioQueueRef.current.forEach(item => URL.revokeObjectURL(item.url));
+      audioQueueRef.current = [];
       setSpeakingIdx(null);
+      setIsPlaying(false);
+      setHighlightedInfo({ msgIdx: null, sentence: null, wordIdx: -1 });
+      return;
+    }
+
+    // Stop current if any
+    if (audioRef.current) audioRef.current.pause();
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+
+    audioQueueRef.current.forEach(item => URL.revokeObjectURL(item.url));
+    audioQueueRef.current = [];
+    
+    setSpeakingIdx(index);
+    setHighlightedInfo({ msgIdx: index, sentence: null, wordIdx: -1 });
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await getTtsAudio(token, text, controller.signal);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let startedPlaying = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep last partial line
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const { audio: b64, text: sentenceText } = JSON.parse(line);
+            const byteCharacters = atob(b64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            // PRE-LOAD: Create and prime the audio object immediately
+            const audioObj = new Audio(url);
+            audioObj.load(); // Prime the browser buffer
+            
+            audioQueueRef.current.push({ audioObj, url, text: sentenceText });
+
+            // If we haven't started playing, start now
+            if (!startedPlaying) {
+              startedPlaying = true;
+              playNextInQueue();
+            }
+          } catch (e) {
+            console.error("Error parsing audio chunk", e);
+          }
+        }
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error("TTS Stream error", err);
+        setSpeakingIdx(null);
+      }
     }
   };
 
@@ -287,7 +452,7 @@ export default function ChatWindow({
               <div key={i} className={`message-bubble ${m.role}`}>
                 <div className="message-content">
                   {m.role === 'assistant' ? (
-                    renderMessageContent(m.text)
+                    renderMessageContent(m.text, i)
                   ) : m.text}
                 </div>
                 {m.role === 'assistant' && !m.text.startsWith('✅') && !m.text.includes('No documents found') && (
@@ -365,7 +530,7 @@ export default function ChatWindow({
         )}
         <form onSubmit={handleSubmit} className="chat-input-wrapper">
           <label className="icon-btn" title="Attach Document">
-            <input type="file" accept=".pdf" style={{display: 'none'}} onChange={handleUpload} disabled={loading || uploading} />
+            <input type="file" accept=".pdf" multiple style={{display: 'none'}} onChange={handleUpload} disabled={loading || uploading} />
             <Paperclip size={20} />
           </label>
           <button 

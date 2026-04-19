@@ -1,8 +1,16 @@
+# Python Version: 3.12.10
+
+# Web Framework & Auth
 fastapi
 uvicorn
 sqlalchemy
 passlib[bcrypt]
 python-jose[cryptography]
+pydantic>=2.0.0
+python-multipart
+python-dotenv
+
+# Vector Database & RAG
 qdrant-client
 sentence-transformers
 langchain
@@ -13,15 +21,19 @@ langchain-huggingface
 langchain-qdrant
 langchain-groq
 langchain-google-genai
-pymupdf
-google-genai
-streamlit
-requests
-python-multipart
-python-dotenv
 langsmith
-pyaudio
-qwen-asr
-torch>=2.6.0
+
+# Document Processing
+pymupdf
+
+# AI & LLM Clients
+google-genai
+requests
 numpy
-kokoro
+
+# Voice & TTS (Version-specific requirements)
+pyaudio
+torch>=2.0.0
+torchaudio
+transformers
+kokoro==0.9.4

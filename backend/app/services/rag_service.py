@@ -88,10 +88,7 @@ class RAGService:
         1. Base your answer strictly on context.
         2. MISSING INFO: Answer naturally based ONLY on context, don't use repetitive disclaimers.
         3. LEGAL ONLY: If context isn't legal, refuse.
-        4. CITATION: Use exactly one consolidated citation at the end, ALWAYS separated by TWO newlines from the final sentence. 
-           Format: \n\n[Source: filename, Pages: 1, 4, 9]
-           NEVER use "various", "multiple", or "etc". List every unique page number found in the context for each source.
-        5. STYLE: Plain text only. No markdown, no bold, no lists.
+        4. STYLE: Plain text only. No markdown, no bold, no lists. Follow the requested intent in your tone.
         """
         prompts = {
             "SUMMARY": f"You are a Legal Clerk. Summarize the case background, issue, and outcome. {base_rules}",
@@ -103,10 +100,14 @@ class RAGService:
         return prompts.get(intent, prompts["GENERAL"])
 
     @traceable
-    async def generate_answer_stream(self, query, context_list, source_documents=None, trace_metadata=None):
+    async def generate_answer_stream(self, query, context_list, brief=False, trace_metadata=None):
         intent = self.detect_intent(query)
         context_str = "\n\n".join(context_list)
         system_prompt = self.get_dynamic_prompt(intent)
+        
+        if brief:
+            system_prompt += "\nINSTRUCTION: Be extremely concise (100 words max). Focus strictly on the provided context."
+
         user_prompt = f"CONTEXT:\n{context_str}\n\nUSER QUESTION: {query}\n\nANSWER BASED ON INTENT ({intent}):"
         
         messages = [
@@ -121,7 +122,13 @@ class RAGService:
         if not text_sample or len(text_sample.strip()) < 50:
             return True # Conservative default
         
-        prompt = f"Is the following text sample from an official legal document like a judgment or statute? Respond YES or NO ONLY.\n\n{text_sample[:1000]}"
+        prompt = (
+            "You are a legal document auditor. Is the following text sample from a legal or quasi-legal document? "
+            "Count official court judgments, statutes, case summaries, legal commentaries, contracts, and academic legal articles as YES. "
+            "Reject unrelated technical manuals, personal letters, or general news that doesn't reference specific law. "
+            "Respond with 'YES' or 'NO' only.\n\n"
+            f"TEXT SAMPLE:\n{text_sample[:1200]}"
+        )
         try:
             response = self.llm.invoke(prompt)
             return "YES" in response.content.upper()
