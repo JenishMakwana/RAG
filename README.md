@@ -4,7 +4,7 @@ A professional, high-performance Retrieval-Augmented Generation (RAG) platform t
 
 ## 🌟 Key Features
 
-- **Legal-Specific RAG**: High-fidelity retrieval utilizing **Qdrant** and specialized legal embeddings (`InCaseLawBERT`).
+- **Legal-Specific RAG**: High-fidelity retrieval utilizing **Qdrant** and specialized legal embeddings (`InLegalBERT`).
 - **Parent-Child Chunking**: Maintains document context while allowing for granular retrieval of specific legal clauses.
 - **Premium Voice Experience**:
   - **Seamless TTS Highlighting**: Real-time "karaoke-style" word highlighting synchronized with audio playback.
