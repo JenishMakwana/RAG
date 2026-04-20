@@ -78,11 +78,11 @@ h3,
   transition: transform var(--transition-slow), width var(--transition-slow);
   z-index: 100;
   position: relative;
+  overflow: hidden;
 }
 
 .sidebar.collapsed {
   width: 0;
-  transform: translateX(-100%);
   border-right: none;
 }
 
