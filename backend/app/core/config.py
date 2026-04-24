@@ -39,6 +39,20 @@ class Settings(BaseSettings):
     # Database
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     SQLITE_DB_PATH: str = os.path.join(BASE_DIR, "data", "users.db")
+    
+    USE_POSTGRES: bool = os.getenv("USE_POSTGRES", "false").lower() == "true"
+    POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "password")
+    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
+    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
+    POSTGRES_DB: str = os.getenv("POSTGRES_DB", "legal_rag")
+
+    @property
+    def DATABASE_URL(self) -> str:
+        if self.USE_POSTGRES:
+            return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        return f"sqlite:///{self.SQLITE_DB_PATH}"
+
     QDRANT_PATH: str = "qdrant_storage"
     COLLECTION_NAME: str = "legal_rag"
     

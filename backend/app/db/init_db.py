@@ -26,13 +26,15 @@ def safe_migrate():
         # Users migration
         existing_user_cols = [c['name'] for c in inspector.get_columns('users')]
         if 'is_active' not in existing_user_cols:
-            conn.execute(sa.text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+            # Use 1 for SQLite, TRUE for Postgres
+            default_val = "TRUE" if settings.USE_POSTGRES else "1"
+            conn.execute(sa.text(f"ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT {default_val}"))
         if 'email' not in existing_user_cols:
             conn.execute(sa.text("ALTER TABLE users ADD COLUMN email TEXT UNIQUE"))
             
         conn.commit()
 
-def init_sqlite():
+def init_db():
     Base.metadata.create_all(bind=engine)
     try:
         safe_migrate()

@@ -20,11 +20,21 @@ export default function Auth({ onLoginSuccess }) {
         const data = await login(email, password);
         onLoginSuccess(data.access_token, email);
       } else {
+        // Frontend validation for complexity
+        const hasUpper = /[A-Z]/.test(password);
+        const hasNumber = /\d/.test(password);
+        const hasSpecial = /[@$!%*?&]/.test(password);
+
+        if (!hasUpper || !hasNumber || !hasSpecial || password.length < 8) {
+          throw new Error('Password does not meet complexity requirements.');
+        }
+
         await register(username, email, password);
         const data = await login(email, password);
         onLoginSuccess(data.access_token, email);
       }
     } catch (err) {
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -41,11 +51,11 @@ export default function Auth({ onLoginSuccess }) {
         </div>
         <h1>{isLogin ? 'Welcome Back' : 'Join Us'}</h1>
         <p className="auth-subtitle">
-          {isLogin 
-            ? 'Sign in to access your legal documents and case analysis.' 
+          {isLogin
+            ? 'Sign in to access your legal documents and case analysis.'
             : 'Create an account to start your legal case research.'}
         </p>
-        
+
         <form onSubmit={handleSubmit}>
           {!isLogin && (
             <div className="form-group">
@@ -80,15 +90,22 @@ export default function Auth({ onLoginSuccess }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
             />
+            {!isLogin && (
+              <p className="password-hint" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.25rem', opacity: '0.8' }}>
+                Must be at least 8 characters with 1 uppercase, 1 number, and 1 special character.
+              </p>
+            )}
           </div>
-          
+
+
           {error && (
             <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.875rem', textAlign: 'center' }}>
               {error}
             </div>
           )}
-          
+
           <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
           </button>

@@ -2,11 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.api_v1.api import api_router
 from .core.config import settings
-from .db.init_db import init_sqlite, init_qdrant
+from .db.init_db import init_db, init_qdrant
 import uvicorn
 import threading
 from .services.voice_service import voice_service
-
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -20,7 +19,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    init_sqlite()
+    init_db()
     init_qdrant()
     # Preload ASR/TTS models in a background thread to avoid blocking startup
     threading.Thread(target=voice_service.preload_models, daemon=True).start()
