@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+myenv/
+
+# Node (Frontend)
+frontend-react/node_modules/
+frontend-react/dist/
+frontend-react/dist-ssr/
+frontend-react/.vite/
+frontend-react/*.local
+
+# Environment & Secrets
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Databases and Vector Storage
+backend/app/data/*.db
+data/*.db
+qdrant_storage/
+
+# Temporary Files
+temp_*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+inspect_qdrant.py
+Case_Overview_Questions_Answers.csv
+generate_embeddings.py
+brain/
+backend/scratch/

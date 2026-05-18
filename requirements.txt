@@ -1,0 +1,40 @@
+# Python Version: 3.12.10
+
+# Web Framework & Auth
+fastapi
+uvicorn
+sqlalchemy
+passlib[bcrypt]
+python-jose[cryptography]
+pydantic>=2.0.0
+python-multipart
+python-dotenv
+psycopg2-binary
+
+# Vector Database & RAG
+qdrant-client
+sentence-transformers
+langchain
+langchain-community
+langchain-core
+langchain-text-splitters
+langchain-huggingface
+langchain-qdrant
+langchain-groq
+langchain-google-genai
+langsmith
+
+# Document Processing
+pymupdf
+
+# AI & LLM Clients
+google-genai
+requests
+numpy
+
+# Voice & TTS (Version-specific requirements)
+pyaudio
+torch>=2.0.0
+torchaudio
+transformers
+kokoro==0.9.4
