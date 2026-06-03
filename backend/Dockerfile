@@ -20,17 +20,7 @@ RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir --no-build-isolation pyaudio && \
     pip install --no-cache-dir -r ../requirements.txt && \
     pip install --no-cache-dir --no-deps qwen-asr qwen-tts && \
-    python -c " \
-import glob; \
-for f in glob.glob('/usr/local/lib/python3.*/site-packages/qwen_asr/**/*.py', recursive=True) + glob.glob('/usr/local/lib/python3.*/site-packages/qwen_tts/**/*.py', recursive=True): \
-    with open(f, 'r') as file: \
-        content = file.read() \
-    if '@check_model_inputs()' in content: \
-        print('Patching:', f) \
-        content = content.replace('@check_model_inputs()', '# @check_model_inputs()') \
-        with open(f, 'w') as file: \
-            file.write(content) \
-"
+    python -c "import glob; [open(f, 'w').write(c.replace('@check_model_inputs()', '# @check_model_inputs()')) for f, c in [(f, open(f).read()) for f in glob.glob('/usr/local/lib/python3.*/site-packages/qwen_asr/**/*.py', recursive=True) + glob.glob('/usr/local/lib/python3.*/site-packages/qwen_tts/**/*.py', recursive=True)] if '@check_model_inputs()' in c]"
 
 # Copy backend application source
 COPY backend/app ./app
