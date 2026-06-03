@@ -36,7 +36,7 @@ numpy
 pyaudio
 torch>=2.0.0
 torchaudio
-transformers
+transformers==4.46.3
 kokoro==0.7.16
 sounddevice
 soundfile
