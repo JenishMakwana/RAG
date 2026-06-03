@@ -26,8 +26,7 @@ import {
   chatQuery, 
   fetchChatHistory, 
   uploadDocument, 
-  startVoiceRecording, 
-  stopVoiceRecording,
+  transcribeVoice,
   getTtsAudio
 } from '../api';
 
@@ -55,6 +54,8 @@ export default function ChatWindow({
   const [speakingIdx, setSpeakingIdx] = useState(null);
   const messagesEndRef = useRef(null);
   const audioRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [pendingSelectionQuery, setPendingSelectionQuery] = useState(null);
   
@@ -278,23 +279,45 @@ export default function ChatWindow({
 
   const toggleVoice = async () => {
     if (isRecording) {
-      setIsRecording(false);
-      setIsProcessingVoice(true);
-      try {
-        const result = await stopVoiceRecording(token);
-        if (result.query) setInput(result.query);
-      } catch (err) {
-        alert('Voice processing failed');
-      } finally {
-        setIsProcessingVoice(false);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
       }
     } else {
-      setIsRecording(true);
       try {
-        await startVoiceRecording(token);
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          setIsRecording(false);
+          setIsProcessingVoice(true);
+
+          // Stop all audio tracks to release the microphone
+          stream.getTracks().forEach(track => track.stop());
+
+          try {
+            const result = await transcribeVoice(token, audioBlob);
+            if (result.query) setInput(result.query);
+          } catch (err) {
+            alert('Voice processing failed: ' + err.message);
+          } finally {
+            setIsProcessingVoice(false);
+          }
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
       } catch (err) {
         setIsRecording(false);
-        alert('Microphone access denied');
+        alert('Microphone access denied or error occurred');
       }
     }
   };

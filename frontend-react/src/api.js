@@ -176,33 +176,22 @@ export async function deleteChatSession(token, sessionId) {
   return await response.json();
 }
 
-// Voice API functions
-export async function startVoiceRecording(token) {
-  const response = await fetch(`${BASE_URL}/voice/start`, {
+export async function transcribeVoice(token, audioBlob) {
+  const formData = new FormData();
+  // Name the file 'recording.webm' so backend knows how to save it
+  formData.append('file', audioBlob, 'recording.webm');
+  
+  const response = await fetch(`${BASE_URL}/voice/transcribe`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
     },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to start recording');
-  }
-
-  return await response.json();
-}
-
-export async function stopVoiceRecording(token) {
-  const response = await fetch(`${BASE_URL}/voice/stop`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    body: formData,
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.detail || 'Failed to stop recording');
+    throw new Error(error.detail || 'Failed to transcribe audio');
   }
 
   return await response.json();
