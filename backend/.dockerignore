@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+myenv/
+venv/
+env/
+.env
+
+# Qdrant local storage (mounted as volume)
+qdrant_storage/
+
+# SQLite database (mounted as volume)
+app/data/
+
+# Test / dev artifacts
+*.log
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Scratch / temp
+scratch/
+
+# Git
+.git/
+.gitignore
