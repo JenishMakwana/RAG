@@ -1,3 +1,13 @@
+---
+title: Legal Case Law RAG
+emoji: "⚖️"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Legal Case Law RAG Assistant ⚖️
 
 A professional, high-performance Retrieval-Augmented Generation (RAG) platform tailored for legal researchers. This application combines state-of-the-art LLMs with a proprietary legal search engine to provide precise, citation-backed analysis of case law.
