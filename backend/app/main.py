@@ -26,5 +26,9 @@ async def startup_event():
 
 app.include_router(api_router)
 
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Legal Case Law RAG Assistant API is running"}
+
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8001, reload=True)
