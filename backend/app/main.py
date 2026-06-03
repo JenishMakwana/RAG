@@ -5,7 +5,7 @@ from .core.config import settings
 from .db.init_db import init_db, init_qdrant
 import uvicorn
 import threading
-from .services.voice_service import voice_service
+from .services.model_manager import speech_model_manager
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -22,7 +22,7 @@ async def startup_event():
     init_db()
     init_qdrant()
     # Preload ASR/TTS models in a background thread to avoid blocking startup
-    threading.Thread(target=voice_service.preload_models, daemon=True).start()
+    threading.Thread(target=speech_model_manager.warmup_models, daemon=True).start()
 
 app.include_router(api_router)
 

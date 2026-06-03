@@ -33,15 +33,13 @@ requests
 numpy
 
 # Voice & TTS (Version-specific requirements)
-pyaudio
-torch>=2.0.0
-torchaudio
-transformers>=4.48.0
-kokoro==0.7.16
-sounddevice
-soundfile
+torch==2.7.1
+torchaudio==2.7.1
+transformers==4.52.4
+accelerate==1.7.0
+sentencepiece==0.2.0
+safetensors>=0.5.0
+soundfile==0.13.1
+librosa==0.11.0
+kokoro>=0.7.16
 pydantic-settings
-sentencepiece>=0.2.0
-nagisa
-soynlp
-librosa
