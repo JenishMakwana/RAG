@@ -177,7 +177,7 @@ export async function transcribeVoice(token, audioBlob) {
   const formData = new FormData();
   // Name the file 'recording.webm' so backend knows how to save it
   formData.append('file', audioBlob, 'recording.webm');
-  
+
   const response = await fetch(`${BASE_URL}/voice/transcribe`, {
     method: 'POST',
     headers: {
