@@ -99,7 +99,7 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
               <tbody>
                 {filteredDocs.map((doc) => (
                   <tr key={doc.id || doc.filename}>
-                    <td>
+                    <td data-label="Document">
                       <div className="doc-primary-cell">
                         <div className="doc-icon-small">
                           <FileText size={16} />
@@ -107,13 +107,13 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
                         <span className="doc-name">{doc.filename}</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Upload Date">
                       <div className="metadata-cell">
                         <Calendar size={14} />
                         <span>{new Date(doc.date).toLocaleDateString()}</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Source Chat">
                       {doc.session_id ? (
                         <button className="chat-link-btn" onClick={() => onSelectChat(doc.session_id)}>
                           <MessageSquare size={14} />
@@ -124,19 +124,19 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
                         <span className="text-muted">No Session</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Scale">
                       <div className="metadata-cell">
                         <Layers size={14} />
                         <span>{doc.chunks} Chunks</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Efficiency">
                       <div className="metadata-cell">
                         <Clock size={14} />
                         <span>{doc.embed_time}s</span>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <button className="delete-row-btn" onClick={() => handleDelete(doc.filename)} title="Delete Document">
                         <Trash2 size={16} />
                       </button>

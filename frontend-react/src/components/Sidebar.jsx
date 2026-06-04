@@ -8,6 +8,7 @@ import {
   Gavel,
   ChevronLeft
 } from 'lucide-react';
+import logo from '../logo.png';
 import {
   fetchDocuments,
   deleteDocument,
@@ -65,10 +66,28 @@ export default function Sidebar({
     <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-content">
         <div className="sidebar-header">
-          <div className="user-avatar" style={{ background: 'var(--primary)', width: '32px', height: '32px' }}>
-            <Gavel size={18} />
+          <div className="user-avatar" style={{ 
+            background: '#000000', 
+            width: '32px', 
+            height: '32px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            border: '1px solid rgba(168, 85, 247, 0.35)', 
+            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.2)',
+            padding: '1px',
+            borderRadius: '8px'
+          }}>
+            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px' }} />
           </div>
           <h2>Case Assistant</h2>
+          <button 
+            className="sidebar-close-btn" 
+            onClick={() => setIsCollapsed(true)}
+            title="Close sidebar"
+          >
+            <ChevronLeft size={20} />
+          </button>
         </div>
 
         <button className="new-chat-btn" onClick={onNewChat}>

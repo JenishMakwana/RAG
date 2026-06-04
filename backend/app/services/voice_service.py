@@ -46,7 +46,7 @@ class VoiceService:
             input_features = inputs.input_features.to(device, dtype=dtype)
             
             with torch.no_grad():
-                predicted_ids = model.generate(input_features)
+                predicted_ids = model.generate(input_features, language="en", task="transcribe")
 
             transcription = processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
             return transcription.strip()
