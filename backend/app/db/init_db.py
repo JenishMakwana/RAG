@@ -60,6 +60,18 @@ def init_qdrant():
             vectors_config=rest.VectorParams(size=768, distance=rest.Distance.COSINE),
         )
     
+    # Create payload indexes for efficient and required filtering in production
+    for field in ["metadata.user_id", "metadata.session_id", "metadata.filename"]:
+        try:
+            q_client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name=field,
+                field_schema=rest.PayloadSchemaType.KEYWORD,
+            )
+            print(f"[+] Payload index verified for: {field}")
+        except Exception as idx_err:
+            print(f"[-] Index creation note for {field}: {idx_err}")
+
     # Run a lightweight backfill check for older documents
     try:
         backfill_missing_metadata()
