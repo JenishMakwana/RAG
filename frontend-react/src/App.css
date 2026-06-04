@@ -1402,6 +1402,7 @@ h3,
   border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
   overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--shadow-lg);
 }
 
@@ -1429,10 +1430,16 @@ h3,
   vertical-align: middle;
 }
 
+.library-table th:first-child,
+.library-table td:first-child {
+  max-width: 320px;
+}
+
 .doc-primary-cell {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .doc-icon-small {
@@ -1449,6 +1456,12 @@ h3,
 .doc-name {
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.library-table .doc-name {
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .metadata-cell {
