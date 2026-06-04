@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System dependencies: PyAudio, psycopg2, build tools
+# System dependencies: PyAudio, psycopg2, build tools, ffmpeg (for webm audio)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     portaudio19-dev \
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     pkg-config \
     cmake \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # requirements.txt is copied from the project root (build context is root)
