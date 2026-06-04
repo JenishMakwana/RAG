@@ -44,6 +44,7 @@ body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   overflow: hidden;
   height: 100vh;
+  height: 100dvh;
 }
 
 h1,
@@ -57,6 +58,7 @@ h3,
 .App {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   background: radial-gradient(circle at 50% -20%, rgba(168, 85, 247, 0.15) 0%, rgba(245, 158, 11, 0.04) 40%, var(--bg-deep) 80%);
 }
@@ -358,8 +360,10 @@ h3,
 }
 
 .chat-header {
-  height: 4rem;
-  padding: 0 2rem;
+  height: calc(4rem + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: 2rem;
+  padding-right: 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -467,6 +471,7 @@ h3,
 
 .message-content {
   flex: 1;
+  min-width: 0;
 }
 
 /* Premium Markdown Formatting in Chat */
@@ -1548,6 +1553,15 @@ h3,
   font-style: italic;
   line-height: 1.4;
   white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.message-content hr {
+  border: 0;
+  height: 1px;
+  background: var(--glass-border);
+  margin: 1rem 0;
 }
 
 .message-content .highlight-active {
