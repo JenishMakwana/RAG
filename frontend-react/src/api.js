@@ -1,8 +1,5 @@
-const BASE_URL = import.meta.env.VITE_API_URL || (
-  window.location.port && (window.location.port === '5173' || window.location.port === '3000')
-    ? 'http://localhost:8001'
-    : `${window.location.origin}/api`
-);
+// Hardcoded backend URL to guarantee it connects to Hugging Face
+const BASE_URL = 'https://jenishmakwana-rag.hf.space';
 
 export async function login(email, password) {
   const formData = new URLSearchParams();
