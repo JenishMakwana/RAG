@@ -317,7 +317,7 @@ export default function ChatWindow({
         setIsRecording(true);
       } catch (err) {
         setIsRecording(false);
-        alert('Microphone access denied or error occurred');
+        alert('Microphone error: ' + (err.name || 'Unknown') + ' - ' + (err.message || err));
       }
     }
   };
