@@ -1457,3 +1457,78 @@ mark.highlight-sentence {
   text-decoration: none;
   transition: background 0.3s ease;
 }
+
+/* =========================================
+   Mobile & Tablet Responsiveness
+   ========================================= */
+@media (max-width: 768px) {
+  /* Make sidebar a drawer on mobile */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 280px; /* Keep width so content doesn't squish during animation */
+  }
+
+  /* Make sure the main app area takes full width when sidebar is overlaying */
+  .App {
+    position: relative;
+  }
+
+  .chat-header, .library-main-container header {
+    padding: 0 1rem;
+  }
+
+  .chat-messages {
+    padding: 1rem;
+  }
+
+  .chat-input-area {
+    padding: 1rem;
+  }
+
+  .chat-input-wrapper {
+    padding: 0.25rem;
+  }
+
+  .message-bubble {
+    max-width: 90%;
+  }
+
+  .welcome-screen {
+    margin: 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .library-container {
+    padding: 1rem;
+  }
+
+  .library-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .search-bar {
+    max-width: 100%;
+  }
+
+  /* Table responsiveness */
+  .library-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .library-table th, .library-table td {
+    padding: 1rem 0.75rem;
+    white-space: nowrap;
+  }
+}

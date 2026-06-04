@@ -49,11 +49,18 @@ function App() {
     setMessages([]);
     setSessionDocuments([]);
     setCurrentView('chat');
+    if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
   };
 
   const handleSelectSession = (sessionId) => {
     setCurrentSessionId(sessionId);
     setCurrentView('chat');
+    if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
+  };
+
+  const handleViewLibrary = () => {
+    setCurrentView('library');
+    if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
   };
 
   if (!token) {
@@ -81,7 +88,7 @@ function App() {
           isCollapsed={isSidebarCollapsed}
           setIsCollapsed={setIsSidebarCollapsed}
           currentView={currentView}
-          onViewLibrary={() => setCurrentView('library')}
+          onViewLibrary={handleViewLibrary}
           sessionDocuments={sessionDocuments}
         />
 
