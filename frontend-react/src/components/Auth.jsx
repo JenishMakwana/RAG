@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Gavel, ShieldCheck, Scale, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { login, register } from '../api';
+import logo from '../logo.png';
 
 export default function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -55,8 +56,13 @@ export default function Auth({ onLoginSuccess }) {
       {/* Left Panel: Legal Case Law Brand Info (Unique & Cinematic) */}
       <div className="auth-graphic-side">
         <div className="graphic-brand">
-          <div className="graphic-brand-logo">
-            <Gavel size={24} color="white" />
+          <div className="graphic-brand-logo" style={{ 
+            background: '#000000', 
+            border: '1.5px solid rgba(168, 85, 247, 0.4)', 
+            boxShadow: '0 8px 24px rgba(168, 85, 247, 0.25), inset 0 0 12px rgba(168, 85, 247, 0.2)',
+            padding: '2px'
+          }}>
+            <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
           </div>
           <span className="graphic-brand-name">Legal Case Law RAG</span>
         </div>
@@ -96,8 +102,16 @@ export default function Auth({ onLoginSuccess }) {
       <div className="auth-form-side">
         <div className="auth-card">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-            <div className="graphic-brand-logo" style={{ width: '60px', height: '60px', borderRadius: '16px' }}>
-              <Gavel size={30} color="white" />
+            <div className="graphic-brand-logo" style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '16px', 
+              background: '#000000', 
+              border: '1.5px solid rgba(168, 85, 247, 0.4)', 
+              boxShadow: '0 8px 24px rgba(168, 85, 247, 0.25), inset 0 0 12px rgba(168, 85, 247, 0.2)',
+              padding: '3px'
+            }}>
+              <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} />
             </div>
           </div>
           <h1>{isLogin ? 'Welcome Back' : 'Create Account'}</h1>

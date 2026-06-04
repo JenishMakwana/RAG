@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import logo from '../logo.png';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { 
@@ -464,7 +465,21 @@ export default function ChatWindow({
           <>
             {messages.length === 0 && (
               <div className="welcome-screen">
-                <Sparkles size={40} style={{ color: 'var(--primary)' }} />
+                <div className="welcome-logo-container" style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  margin: '0 auto 1.5rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  background: '#000000',
+                  border: '1.5px solid rgba(168, 85, 247, 0.45)',
+                  boxShadow: '0 12px 32px rgba(168, 85, 247, 0.25), inset 0 0 16px rgba(168, 85, 247, 0.2)',
+                  padding: '4px',
+                  borderRadius: '16px'
+                }}>
+                  <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px' }} />
+                </div>
                 <h2>Legal Case Assistant</h2>
                 <p className="welcome-subtitle">
                   Analyze complex case files, retrieve precise legal citations, and verify precedents securely.
@@ -595,9 +610,9 @@ export default function ChatWindow({
               onChange={(e) => setInput(e.target.value)}
               placeholder={
                 isProcessingVoice ? "Processing voice..." : 
-                selectedFiles.length > 0 ? `Searching in ${selectedFiles.length} unit${selectedFiles.length > 1 ? 's' : ''}...` :
-                sessionDocuments.length > 0 ? "Searching all documents..." :
-                "Ask a question about your documents..."
+                selectedFiles.length > 0 ? `Searching ${selectedFiles.length} doc${selectedFiles.length > 1 ? 's' : ''}...` :
+                sessionDocuments.length > 0 ? "Search documents..." :
+                "Ask a question..."
               }
               disabled={loading || uploading || isProcessingVoice}
             />

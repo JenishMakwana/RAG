@@ -92,6 +92,10 @@ function App() {
           sessionDocuments={sessionDocuments}
         />
 
+        {!isSidebarCollapsed && (
+          <div className="sidebar-backdrop" onClick={() => setIsSidebarCollapsed(true)} />
+        )}
+
         {currentView === 'library' ? (
           <div className="library-main-container">
             <header className="chat-header">
