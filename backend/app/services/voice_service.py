@@ -9,10 +9,28 @@ import torch
 class VoiceService:
     def transcribe(self, audio_path: str) -> str:
         from .model_manager import speech_model_manager
+        import traceback
+        import subprocess
+        import os
 
         try:
-            # Load audio using librosa at 16000 Hz
-            audio, sr = librosa.load(audio_path, sr=16000)
+            # Explicitly convert webm to wav using ffmpeg since librosa sometimes fails on webm
+            wav_path = audio_path + ".wav"
+            try:
+                subprocess.run(
+                    ["ffmpeg", "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", wav_path],
+                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+            except subprocess.CalledProcessError as e:
+                print(f"FFmpeg failed: {e.stderr.decode()}")
+                return ""
+
+            # Load audio using librosa at 16000 Hz from the guaranteed WAV file
+            audio, sr = librosa.load(wav_path, sr=16000)
+
+            # Cleanup wav
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
 
             processor = speech_model_manager.get_stt_processor()
             model = speech_model_manager.get_stt_model()
@@ -30,6 +48,7 @@ class VoiceService:
             return transcription.strip()
         except Exception as e:
             print(f"Transcription error: {e}")
+            traceback.print_exc()
             return ""
 
     def create_voice_router(self):
