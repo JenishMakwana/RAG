@@ -14,11 +14,15 @@ class VoiceService:
         import os
 
         try:
+            # Get bundled ffmpeg executable path
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+
             # Explicitly convert webm to wav using ffmpeg since librosa sometimes fails on webm
             wav_path = audio_path + ".wav"
             try:
                 subprocess.run(
-                    ["ffmpeg", "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", wav_path],
+                    [ffmpeg_exe, "-y", "-i", audio_path, "-ar", "16000", "-ac", "1", wav_path],
                     check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
             except subprocess.CalledProcessError as e:
