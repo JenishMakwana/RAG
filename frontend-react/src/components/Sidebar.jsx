@@ -8,7 +8,7 @@ import {
   Gavel,
   ChevronLeft
 } from 'lucide-react';
-import logo from '../logo.png';
+const logo = "https://huggingface.co/spaces/JenishMakwana/RAG/resolve/main/frontend-react/public/logo.png";
 import {
   fetchDocuments,
   deleteDocument,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Gavel, ShieldCheck, Scale, BrainCircuit, Eye, EyeOff } from 'lucide-react';
 import { login, register } from '../api';
-import logo from '../logo.png';
+const logo = "https://huggingface.co/spaces/JenishMakwana/RAG/resolve/main/frontend-react/public/logo.png";
 
 export default function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);

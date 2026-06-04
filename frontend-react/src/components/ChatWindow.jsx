@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import logo from '../logo.png';
+const logo = "https://huggingface.co/spaces/JenishMakwana/RAG/resolve/main/frontend-react/public/logo.png";
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { 
