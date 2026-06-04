@@ -37,9 +37,9 @@ class SpeechModelManager:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-        processor = AutoProcessor.from_pretrained("openai/whisper-medium")
+        processor = AutoProcessor.from_pretrained("openai/whisper-small")
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
-            "openai/whisper-medium",
+            "openai/whisper-small",
             torch_dtype=dtype,
             low_cpu_mem_usage=True,
             use_safetensors=True
