@@ -1,5 +1,7 @@
-// Hardcoded backend URL to guarantee it connects to Hugging Face
-const BASE_URL = 'https://jenishmakwana-rag.hf.space';
+// Dynamic backend URL to support local development and production Hugging Face Space
+const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8001'
+  : 'https://jenishmakwana-rag.hf.space';
 
 export async function login(email, password) {
   const formData = new URLSearchParams();
