@@ -69,13 +69,7 @@ function App() {
 
   return (
     <>
-      {isUploading && (
-        <div className="loading-overlay">
-          <div className="loader-ring"></div>
-          <p>Processing and Embedding Documents...</p>
-        </div>
-      )}
-      <div className={`App ${isUploading ? 'blurred' : ''}`}>
+      <div className="App">
         <Sidebar
           token={token}
           email={email}
@@ -109,7 +103,6 @@ function App() {
             <DocsLibrary
               token={token}
               onSelectChat={handleSelectSession}
-              onDeleteSuccess={() => setRefreshSessions(prev => prev + 1)}
             />
           </div>
         ) : (

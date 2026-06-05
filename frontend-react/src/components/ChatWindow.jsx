@@ -264,6 +264,7 @@ export default function ChatWindow({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (uploading) return;
     const queryText = input;
     if (!queryText.trim()) return;
     setInput('');
@@ -591,6 +592,12 @@ export default function ChatWindow({
               </div>
             </div>
           )}
+          {uploading && (
+            <div className="embedding-status">
+              <div className="mini-spinner"></div>
+              <span>Processing and embedding documents... Please wait.</span>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="chat-input-wrapper">
             <label className="icon-btn" title="Attach Document">
               <input type="file" accept=".pdf" multiple style={{display: 'none'}} onChange={handleUpload} disabled={loading || uploading} />
@@ -614,7 +621,7 @@ export default function ChatWindow({
                 sessionDocuments.length > 0 ? "Search documents..." :
                 "Ask a question..."
               }
-              disabled={loading || uploading || isProcessingVoice}
+              disabled={loading || isProcessingVoice}
             />
             <button type="submit" className="send-btn" disabled={loading || uploading || !input.trim()}>
               <Send size={18} />

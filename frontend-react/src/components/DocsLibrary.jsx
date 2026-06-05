@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
   FileText, 
-  Trash2, 
   MessageSquare, 
   Calendar, 
   Layers, 
@@ -9,9 +8,9 @@ import {
   ExternalLink,
   Search
 } from 'lucide-react';
-import { fetchDocuments, deleteDocument } from '../api';
+import { fetchDocuments } from '../api';
 
-export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
+export default function DocsLibrary({ token, onSelectChat }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,17 +31,6 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
   useEffect(() => {
     if (token) loadDocs();
   }, [token]);
-
-  const handleDelete = async (filename) => {
-    if (!confirm(`Are you sure you want to delete "${filename}" and its embeddings?`)) return;
-    try {
-      await deleteDocument(token, filename);
-      setDocuments(prev => prev.filter(d => d.filename !== filename));
-      if (onDeleteSuccess) onDeleteSuccess();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
 
   const filteredDocs = documents.filter(doc => 
     doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,7 +81,6 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
                   <th>Source Chat</th>
                   <th>Scale</th>
                   <th>Efficiency</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -135,11 +122,6 @@ export default function DocsLibrary({ token, onSelectChat, onDeleteSuccess }) {
                         <Clock size={14} />
                         <span>{doc.embed_time}s</span>
                       </div>
-                    </td>
-                    <td data-label="Actions">
-                      <button className="delete-row-btn" onClick={() => handleDelete(doc.filename)} title="Delete Document">
-                        <Trash2 size={16} />
-                      </button>
                     </td>
                   </tr>
                 ))}
