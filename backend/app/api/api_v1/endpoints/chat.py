@@ -16,6 +16,37 @@ from ....services.tts import get_tts_wav, stream_tts_wav_chunks
 import re
 from pydantic import BaseModel
 
+def clean_context_text(text: str) -> str:
+    if not text:
+        return ""
+    # Normalize unicode spaces and control characters
+    text = text.replace('\xa0', ' ')
+    text = text.replace('\u200b', '')
+    lines = []
+    for line in text.splitlines():
+        cleaned = line.strip()
+        if not cleaned:
+            continue
+        # Replace 3 or more repeating divider symbols inside lines with a single one (e.g. ------ to -)
+        cleaned = re.sub(r'([=\-_*#\.\~\+\|\\/\u2014])\1{2,}', r'\1', cleaned)
+        cleaned = cleaned.strip()
+        # Skip lines that collapse to a single divider symbol
+        if cleaned in ['=', '-', '_', '*', '#', '.', '~', '+', '|', '\\', '/', '\u2014']:
+            continue
+        # Remove spaces to check if it's a spacer pattern like ". . . ." or "- - - -"
+        no_spaces = re.sub(r'\s+', '', cleaned)
+        if re.match(r'^[=\-_*#\.\~\+\|\\/\u2014]{2,}$', no_spaces):
+            continue
+        # Skip page reference headers and footers
+        if re.match(r'^(page\s*\d+|\d+\s*of\s*\d+)$', cleaned, re.IGNORECASE):
+            continue
+        # Collapse tabs and consecutive spaces
+        cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+        if cleaned:
+            lines.append(cleaned)
+    return "\n".join(lines)
+
+
 router = APIRouter()
 
 class SpeakRequest(BaseModel):
@@ -123,9 +154,41 @@ async def query_chat(chat_data: ChatQuery, db: Session = Depends(deps.get_db), c
             if page: consolidated_citations[fname].add(page)
             
             if fname not in grouped_hits: grouped_hits[fname] = []
-            grouped_hits[fname].append(f"[Page: {page}]\n{hit.page_content}")
+            context_text = hit.metadata.get('parent_text', hit.page_content)
+            clean_text = clean_context_text(context_text)
+            grouped_hits[fname].append(f"[Page: {page}]\n{clean_text}")
 
         unique_files_found = list(grouped_hits.keys())
+        
+        # Ensure Page 1 context is included for each file (Metadata/Cover Page Injection)
+        for fname in unique_files_found:
+            has_page_1 = any("[Page: 1]\n" in item for item in grouped_hits[fname])
+            if not has_page_1:
+                try:
+                    page_1_scroll, _ = q_client.scroll(
+                        collection_name=COLLECTION_NAME,
+                        scroll_filter=rest.Filter(
+                            must=[
+                                rest.FieldCondition(key="metadata.user_id", match=rest.MatchValue(value=user_id_str)),
+                                rest.FieldCondition(key="metadata.filename", match=rest.MatchValue(value=fname)),
+                                rest.FieldCondition(key="metadata.page", match=rest.MatchValue(value=1))
+                            ]
+                        ),
+                        limit=10,
+                        with_payload=True,
+                        with_vectors=False
+                    )
+                    if page_1_scroll:
+                        for point in reversed(page_1_scroll):
+                            p_meta = point.payload.get("metadata", {})
+                            p_text = p_meta.get("parent_text", point.payload.get("text"))
+                            clean_p_text = clean_context_text(p_text)
+                            page_1_item = f"[Page: 1]\n{clean_p_text}"
+                            if page_1_item not in grouped_hits[fname]:
+                                grouped_hits[fname].insert(0, page_1_item)
+                except Exception as pg_err:
+                    print(f"Error fetching page 1 metadata for {fname}: {pg_err}")
+
         is_sequential = len(unique_files_found) > 1
 
         async def response_generator():
@@ -154,12 +217,29 @@ async def query_chat(chat_data: ChatQuery, db: Session = Depends(deps.get_db), c
                     full_answer += sep
                     yield sep
 
-            # 4. Deterministic Python Citations
+            # Check if the generated answer is a refusal/no-information response
+            is_refusal = False
+            text_lower = full_answer.lower().strip()
+            refusal_keywords = [
+                "no information", "not mentioned", "not found", "not provide", 
+                "not in the provided context", "not in context", "does not contain", 
+                "doesn't contain", "does not mention", "doesn't mention", 
+                "unable to answer", "cannot answer", "no reference", 
+                "i don't know", "i do not know", "i couldn't find"
+            ]
+            if len(text_lower) < 220:
+                for keyword in refusal_keywords:
+                    if keyword in text_lower:
+                        is_refusal = True
+                        break
+
+            # 4. Deterministic Python Citations (Only append if the query was successfully answered)
             citation_lines = []
-            for f, pages in consolidated_citations.items():
-                sorted_pages = sorted(list(pages))
-                pages_str = ", ".join(map(str, sorted_pages))
-                citation_lines.append(f"[Source: {f}, Pages: {pages_str}]")
+            if not is_refusal:
+                for f, pages in consolidated_citations.items():
+                    sorted_pages = sorted(list(pages))
+                    pages_str = ", ".join(map(str, sorted_pages))
+                    citation_lines.append(f"[Source: {f}, Pages: {pages_str}]")
             
             python_citation_str = "\n\n***\n" + "\n".join(citation_lines) if citation_lines else ""
             

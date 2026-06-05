@@ -31,7 +31,7 @@ class SpeechModelManager:
         if self._stt_model is not None and self._stt_processor is not None:
             return
 
-        print("Loading openai/whisper-medium STT...")
+        print("Loading openai/whisper-small STT...")
         
         # Whisper: use GPU if available
         device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -1,8 +1,39 @@
 import os
+import re
 import fitz  # PyMuPDF
 import datetime
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from ..core.config import settings
+
+def clean_text_block(text: str) -> str:
+    if not text:
+        return ""
+    # Normalize unicode spaces and control characters
+    text = text.replace('\xa0', ' ')
+    text = text.replace('\u200b', '')
+    lines = []
+    for line in text.splitlines():
+        cleaned = line.strip()
+        if not cleaned:
+            continue
+        # Replace 3 or more repeating divider symbols inside lines with a single one (e.g. ------ to -)
+        cleaned = re.sub(r'([=\-_*#\.\~\+\|\\/\u2014])\1{2,}', r'\1', cleaned)
+        cleaned = cleaned.strip()
+        # Skip lines that collapse to a single divider symbol
+        if cleaned in ['=', '-', '_', '*', '#', '.', '~', '+', '|', '\\', '/', '\u2014']:
+            continue
+        # Remove spaces to check if it's a spacer pattern like ". . . ." or "- - - -"
+        no_spaces = re.sub(r'\s+', '', cleaned)
+        if re.match(r'^[=\-_*#\.\~\+\|\\/\u2014]{2,}$', no_spaces):
+            continue
+        # Skip page reference headers and footers
+        if re.match(r'^(page\s*\d+|\d+\s*of\s*\d+)$', cleaned, re.IGNORECASE):
+            continue
+        # Collapse tabs and consecutive spaces
+        cleaned = re.sub(r'[ \t]+', ' ', cleaned)
+        if cleaned:
+            lines.append(cleaned)
+    return "\n".join(lines)
 
 def process_pdf(pdf_path: str, user_id: str, original_filename: str, session_id: str = None):
     """
@@ -37,10 +68,13 @@ def process_pdf(pdf_path: str, user_id: str, original_filename: str, session_id:
                 for block in blocks:
                     if block[1] > header_threshold and block[3] < footer_threshold:
                         if block[6] == 0:  # text block
-                            page_text += block[4] + "\n"
+                            cleaned_block = clean_text_block(block[4])
+                            if cleaned_block:
+                                page_text += cleaned_block + "\n\n"
 
                 if not page_text.strip():
-                    page_text = page.get_text("text")
+                    raw_text = page.get_text("text")
+                    page_text = clean_text_block(raw_text)
                 
                 if not page_text.strip():
                     continue

@@ -80,11 +80,12 @@ class RAGService:
         )
         
         print(f"Loading {settings.RERANKER_MODEL_NAME} on {device}...")
+        dtype = torch.float16 if device == "cuda" else torch.float32
         self.reranker = CrossEncoder(
             settings.RERANKER_MODEL_NAME, 
             trust_remote_code=True,
             device=device,
-            automodel_args={"torch_dtype": torch.float16}
+            automodel_args={"torch_dtype": dtype}
         )
         
         # Initialize Resilient LLMs
