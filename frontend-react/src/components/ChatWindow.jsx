@@ -339,11 +339,14 @@ export default function ChatWindow({
       return;
     }
 
-    const { audioObj, url, text: sentenceText } = audioQueueRef.current.shift();
-    audioRef.current = audioObj;
+    const { url, text: sentenceText } = audioQueueRef.current.shift();
     setIsPlaying(true);
 
-    audioObj.onplay = () => {
+    // Update the single audio element's source (iOS/Mobile compatible)
+    audioRef.current.src = url;
+    audioRef.current.load();
+
+    audioRef.current.onplay = () => {
       setHighlightedInfo(prev => ({ 
         ...prev, 
         sentence: sentenceText,
@@ -351,12 +354,12 @@ export default function ChatWindow({
       }));
     };
 
-    audioObj.onended = () => {
+    audioRef.current.onended = () => {
       URL.revokeObjectURL(url);
       playNextInQueue();
     };
 
-    audioObj.play().catch(err => {
+    audioRef.current.play().catch(err => {
       console.error("Playback error", err);
       playNextInQueue();
     });
@@ -384,6 +387,17 @@ export default function ChatWindow({
 
     audioQueueRef.current.forEach(item => URL.revokeObjectURL(item.url));
     audioQueueRef.current = [];
+
+    // Create & unlock the single Audio element synchronously in the user gesture context
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+    // Mobile browsers require a synchronous play/pause on a user gesture to lift restriction
+    audioRef.current.play().then(() => {
+      audioRef.current.pause();
+    }).catch(() => {
+      // Ignore initial play error on empty source
+    });
     
     setSpeakingIdx(index);
     setHighlightedInfo({ msgIdx: index, sentence: null, wordIdx: -1 });
@@ -418,11 +432,8 @@ export default function ChatWindow({
             const blob = new Blob([byteArray], { type: 'audio/wav' });
             const url = URL.createObjectURL(blob);
             
-            // PRE-LOAD: Create and prime the audio object immediately
-            const audioObj = new Audio(url);
-            audioObj.load(); // Prime the browser buffer
-            
-            audioQueueRef.current.push({ audioObj, url, text: sentenceText });
+            // Queue only the url and text (avoiding creating new Audio elements asynchronously)
+            audioQueueRef.current.push({ url, text: sentenceText });
 
             // If we haven't started playing, start now
             if (!startedPlaying) {
