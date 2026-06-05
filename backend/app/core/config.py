@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     RERANK_TOP_K: int = int(os.getenv("RERANK_TOP_K", 15))
     
     # Models
-    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "law-ai/InLegalBERT")
+    EMBEDDING_MODEL_NAME: str = os.getenv("EMBEDDING_MODEL_NAME", "bhavyagiri/InLegal-Sbert")
     RERANKER_MODEL_NAME: str = os.getenv("RERANKER_MODEL_NAME", "cross-encoder/ms-marco-MiniLM-L-6-v2")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     

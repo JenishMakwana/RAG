@@ -219,15 +219,20 @@ async def query_chat(chat_data: ChatQuery, db: Session = Depends(deps.get_db), c
 
             # Check if the generated answer is a refusal/no-information response
             is_refusal = False
-            text_lower = full_answer.lower().strip()
+            # Strip section headers/separators to analyze the raw LLM text content
+            raw_llm_text = re.sub(r'###\s+\[DOCUMENT:.*?\]', '', full_answer)
+            raw_llm_text = re.sub(r'---', '', raw_llm_text)
+            text_lower = raw_llm_text.lower().strip()
+
             refusal_keywords = [
                 "no information", "not mentioned", "not found", "not provide", 
                 "not in the provided context", "not in context", "does not contain", 
                 "doesn't contain", "does not mention", "doesn't mention", 
                 "unable to answer", "cannot answer", "no reference", 
-                "i don't know", "i do not know", "i couldn't find"
+                "i don't know", "i do not know", "i couldn't find", "no mention of",
+                "does not provide"
             ]
-            if len(text_lower) < 220:
+            if len(text_lower) < 500:
                 for keyword in refusal_keywords:
                     if keyword in text_lower:
                         is_refusal = True
