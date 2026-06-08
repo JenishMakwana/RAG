@@ -6,7 +6,8 @@ import {
   FileText,
   LogOut,
   Gavel,
-  ChevronLeft
+  ChevronLeft,
+  X
 } from 'lucide-react';
 const logo = "https://huggingface.co/spaces/JenishMakwana/RAG/resolve/main/frontend-react/public/logo.png";
 import {
@@ -86,7 +87,7 @@ export default function Sidebar({
             onClick={() => setIsCollapsed(true)}
             title="Close sidebar"
           >
-            <ChevronLeft size={20} />
+            <X size={18} />
           </button>
         </div>
 

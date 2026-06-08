@@ -1764,7 +1764,7 @@ mark.highlight-sentence {
   }
 
   .sidebar-close-btn {
-    display: flex;
+    display: flex !important;
   }
 
   .sidebar-backdrop {
@@ -1776,7 +1776,7 @@ mark.highlight-sentence {
     height: 100vh;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
-    z-index: 99;
+    z-index: 999;
     animation: fadeIn 0.3s ease;
   }
 
@@ -1789,22 +1789,25 @@ mark.highlight-sentence {
 
 /* Sidebar close button hidden on desktop */
 .sidebar-close-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   cursor: pointer;
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   margin-left: auto;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .sidebar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: scale(1.05);
 }
 
 /* Sidebar backdrop hidden on desktop */
