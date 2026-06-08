@@ -21,12 +21,10 @@ app.add_middleware(
 async def startup_event():
     init_db()
     init_qdrant()
-    # Preload ASR/TTS models in a background thread to avoid blocking startup
-    threading.Thread(target=speech_model_manager.warmup_models, daemon=True).start()
 
 app.include_router(api_router)
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
     return {"status": "ok", "message": "Legal Case Law RAG Assistant API is running"}
 

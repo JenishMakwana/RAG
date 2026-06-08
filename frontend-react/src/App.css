@@ -469,6 +469,30 @@ h3,
   font-size: 0.88rem; /* Smaller font size for assistant responses */
 }
 
+.message-bubble.error {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.03) 100%);
+  color: #fca5a5;
+  border-bottom-left-radius: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  max-width: 85%;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.08);
+}
+
+.error-icon-container {
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .message-content {
   flex: 1;
   min-width: 0;

@@ -21,7 +21,8 @@ import {
   MessageSquare,
   BrainCircuit,
   ShieldCheck,
-  Scale
+  Scale,
+  AlertCircle
 } from 'lucide-react';
 import { 
   chatQuery, 
@@ -524,10 +525,21 @@ export default function ChatWindow({
             
             {messages.map((m, i) => (
               <div key={i} className={`message-bubble ${m.role}`}>
+                {m.role === 'error' && (
+                  <div className="error-icon-container">
+                    <AlertCircle size={18} />
+                  </div>
+                )}
                 <div className="message-content">
                   {m.role === 'assistant' ? (
                     renderMessageContent(m.text, i)
-                  ) : m.text}
+                  ) : m.role === 'error' ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                      {m.text}
+                    </ReactMarkdown>
+                  ) : (
+                    m.text
+                  )}
                 </div>
                 {m.role === 'assistant' && !m.text.startsWith('✅') && !m.text.includes('No documents found') && (
                   <button 
