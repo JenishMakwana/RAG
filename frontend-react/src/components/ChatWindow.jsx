@@ -130,6 +130,29 @@ export default function ChatWindow({
     );
   };
 
+  const renderErrorMessage = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    const lines = text.split('\n');
+    const headerText = lines[0];
+    const detailText = lines.slice(1).join('\n');
+
+    return (
+      <div className="error-body">
+        <div className="error-header">
+          <AlertCircle size={16} className="error-header-icon" />
+          <span className="error-header-title">{headerText}</span>
+        </div>
+        {detailText && (
+          <div className="error-details">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              {detailText}
+            </ReactMarkdown>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const handleUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -525,22 +548,17 @@ export default function ChatWindow({
             
             {messages.map((m, i) => (
               <div key={i} className={`message-bubble ${m.role}`}>
-                {m.role === 'error' && (
-                  <div className="error-icon-container">
-                    <AlertCircle size={18} />
+                {m.role === 'error' ? (
+                  renderErrorMessage(m.text)
+                ) : (
+                  <div className="message-content">
+                    {m.role === 'assistant' ? (
+                      renderMessageContent(m.text, i)
+                    ) : (
+                      m.text
+                    )}
                   </div>
                 )}
-                <div className="message-content">
-                  {m.role === 'assistant' ? (
-                    renderMessageContent(m.text, i)
-                  ) : m.role === 'error' ? (
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                      {m.text}
-                    </ReactMarkdown>
-                  ) : (
-                    m.text
-                  )}
-                </div>
                 {m.role === 'assistant' && !m.text.startsWith('✅') && !m.text.includes('No documents found') && (
                   <button 
                     className={`speak-btn ${speakingIdx === i ? 'speaking' : ''}`}
