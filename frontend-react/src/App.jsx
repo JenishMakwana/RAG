@@ -103,6 +103,7 @@ function App() {
             <DocsLibrary
               token={token}
               onSelectChat={handleSelectSession}
+              onLogout={handleLogout}
             />
           </div>
         ) : (
@@ -118,6 +119,7 @@ function App() {
             setIsSidebarCollapsed={setIsSidebarCollapsed}
             sessionDocuments={sessionDocuments}
             setSessionDocuments={setSessionDocuments}
+            onLogout={handleLogout}
           />
         )}
       </div>

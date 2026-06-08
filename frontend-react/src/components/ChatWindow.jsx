@@ -45,7 +45,8 @@ export default function ChatWindow({
   isSidebarCollapsed,
   setIsSidebarCollapsed,
   sessionDocuments,
-  setSessionDocuments
+  setSessionDocuments,
+  onLogout
 }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -167,13 +168,19 @@ export default function ChatWindow({
             const result = await uploadDocument(token, file, sessionId);
             return { file, result, success: true };
           } catch (err) {
-            return { file, error: err.message, success: false };
+            return { file, error: err.message, status: err.status, success: false };
           }
         })
       );
 
       const successful = results.filter(r => r.value && r.value.success);
       const failed = results.filter(r => (r.value && !r.value.success) || r.status === 'rejected');
+
+      const isUnauthorized = failed.some(r => r.value?.status === 401);
+      if (isUnauthorized && onLogout) {
+        onLogout();
+        return;
+      }
 
       if (successful.length > 0) {
         if (onUploadSuccess) onUploadSuccess();
@@ -221,12 +228,15 @@ export default function ChatWindow({
       } catch (err) {
         setMessages([]);
         setSessionDocuments([]);
+        if (err.status === 401 && onLogout) {
+          onLogout();
+        }
       } finally {
         setHistoryLoading(false);
       }
     };
     if (token && sessionId) loadHistory();
-  }, [token, sessionId, setMessages, setSessionDocuments]);
+  }, [token, sessionId, setMessages, setSessionDocuments, onLogout]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -281,6 +291,9 @@ export default function ChatWindow({
       if (isFirstMessage) onFirstMessage();
     } catch (err) {
       setMessages(prev => [...prev, { role: 'error', text: err.message }]);
+      if (err.status === 401 && onLogout) {
+        onLogout();
+      }
     } finally {
       setLoading(false);
     }

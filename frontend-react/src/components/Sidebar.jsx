@@ -42,6 +42,9 @@ export default function Sidebar({
       setSessions(sessionsData.sessions);
     } catch (err) {
       setError('Failed to load data');
+      if (err.status === 401 && onLogout) {
+        onLogout();
+      }
     }
   };
 
@@ -60,6 +63,9 @@ export default function Sidebar({
       loadData();
     } catch (err) {
       alert(err.message);
+      if (err.status === 401 && onLogout) {
+        onLogout();
+      }
     }
   };
 

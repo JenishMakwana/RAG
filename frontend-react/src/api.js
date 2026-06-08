@@ -1,7 +1,37 @@
+// Helper to check if the current hostname is a local loopback or private network address
+const isLocalHost = () => {
+  const hostname = window.location.hostname;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    // Private IPv4 ranges (RFC 1918)
+    /^192\.168\./.test(hostname) ||
+    /^10\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    // mDNS local hostnames
+    /\.local$/.test(hostname)
+  );
+};
+
 // Dynamic backend URL to support local development and production Hugging Face Space
-const BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8001'
+const BASE_URL = isLocalHost()
+  ? `http://${window.location.hostname}:8001`
   : 'https://jenishmakwana-rag.hf.space';
+
+// Helper to parse error details and attach status code
+async function handleResponseError(response, defaultMsg) {
+  let errorMsg = defaultMsg;
+  try {
+    const errorData = await response.json();
+    errorMsg = errorData.detail || errorMsg;
+  } catch (e) {
+    // Ignore JSON parsing errors for non-JSON responses
+  }
+  const err = new Error(errorMsg);
+  err.status = response.status;
+  throw err;
+}
 
 export async function login(email, password) {
   const formData = new URLSearchParams();
@@ -17,8 +47,7 @@ export async function login(email, password) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Login failed');
+    await handleResponseError(response, 'Login failed');
   }
 
   return await response.json();
@@ -34,8 +63,7 @@ export async function register(username, email, password) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Registration failed');
+    await handleResponseError(response, 'Registration failed');
   }
 
   return await response.json();
@@ -49,7 +77,7 @@ export async function fetchDocuments(token) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch documents');
+    await handleResponseError(response, 'Failed to fetch documents');
   }
 
   return await response.json();
@@ -71,8 +99,7 @@ export async function uploadDocument(token, file, sessionId = null) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Upload failed');
+    await handleResponseError(response, 'Upload failed');
   }
 
   return await response.json();
@@ -87,8 +114,7 @@ export async function deleteDocument(token, filename) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Delete failed');
+    await handleResponseError(response, 'Delete failed');
   }
 
   return await response.json();
@@ -110,8 +136,7 @@ export async function chatQuery(token, query, sessionId, filename = null, filena
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Chat query failed');
+    await handleResponseError(response, 'Chat query failed');
   }
 
   // Return the raw response so the UI can read the stream
@@ -126,7 +151,7 @@ export async function fetchChatSessions(token) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch chat sessions');
+    await handleResponseError(response, 'Failed to fetch chat sessions');
   }
 
   return await response.json();
@@ -140,7 +165,7 @@ export async function fetchChatHistory(token, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch chat history');
+    await handleResponseError(response, 'Failed to fetch chat history');
   }
 
   return await response.json();
@@ -154,7 +179,7 @@ export async function fetchSessionDocuments(token, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch session documents');
+    await handleResponseError(response, 'Failed to fetch session documents');
   }
 
   return await response.json();
@@ -169,7 +194,7 @@ export async function deleteChatSession(token, sessionId) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to delete chat session');
+    await handleResponseError(response, 'Failed to delete chat session');
   }
 
   return await response.json();
@@ -189,8 +214,7 @@ export async function transcribeVoice(token, audioBlob) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to transcribe audio');
+    await handleResponseError(response, 'Failed to transcribe audio');
   }
 
   return await response.json();
@@ -208,9 +232,9 @@ export async function getTtsAudio(token, text, signal) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'TTS request failed');
+    await handleResponseError(response, 'TTS request failed');
   }
 
   return response;
 }
+

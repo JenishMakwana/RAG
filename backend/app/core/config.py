@@ -1,9 +1,22 @@
 import os
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Search for .env starting from this file's directory and moving upwards to support sub-directory execution
+_current_dir = Path(__file__).resolve().parent
+_env_path = None
+for _parent in [_current_dir] + list(_current_dir.parents):
+    _potential_path = _parent / ".env"
+    if _potential_path.exists():
+        _env_path = _potential_path
+        break
+
+if _env_path:
+    load_dotenv(dotenv_path=_env_path)
+else:
+    load_dotenv()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Legal Case Law RAG"

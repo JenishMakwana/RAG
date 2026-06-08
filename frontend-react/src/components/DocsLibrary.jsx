@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { fetchDocuments } from '../api';
 
-export default function DocsLibrary({ token, onSelectChat }) {
+export default function DocsLibrary({ token, onSelectChat, onLogout }) {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +23,9 @@ export default function DocsLibrary({ token, onSelectChat }) {
       setDocuments(data.documents);
     } catch (err) {
       setError('Failed to load library');
+      if (err.status === 401 && onLogout) {
+        onLogout();
+      }
     } finally {
       setLoading(false);
     }
@@ -30,7 +33,7 @@ export default function DocsLibrary({ token, onSelectChat }) {
 
   useEffect(() => {
     if (token) loadDocs();
-  }, [token]);
+  }, [token, onLogout]);
 
   const filteredDocs = documents.filter(doc => 
     doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
