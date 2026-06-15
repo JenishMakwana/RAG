@@ -303,20 +303,35 @@ async def speak(request: Request, speak_data: SpeakRequest):
     
     # Internal stop signal for THIS specific request
     import threading
+    import asyncio
     disconnect_event = threading.Event()
+
+    async def watch_disconnect():
+        try:
+            while not disconnect_event.is_set():
+                if await request.is_disconnected():
+                    disconnect_event.set()
+                    break
+                await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            pass
+
+    watch_task = asyncio.create_task(watch_disconnect())
 
     # Generator wrapper to monitor disconnection
     async def disconnect_monitor_gen():
         generator = stream_tts_wav_chunks(clean_text, disconnect_event)
         try:
             for chunk in generator:
-                if await request.is_disconnected():
-                    disconnect_event.set()
+                if disconnect_event.is_set():
                     break
                 yield chunk
         except Exception as e:
             disconnect_event.set()
             raise e
+        finally:
+            disconnect_event.set()
+            watch_task.cancel()
 
     return StreamingResponse(
         disconnect_monitor_gen(),

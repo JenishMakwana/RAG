@@ -405,8 +405,16 @@ export default function ChatWindow({
   const handleSpeak = async (text, index) => {
     // If clicking same button while playing, STOP everything
     if (speakingIdx === index) {
-      if (audioRef.current) audioRef.current.pause();
-      if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (audioRef.current) {
+        audioRef.current.onplay = null;
+        audioRef.current.onended = null;
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current.load();
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
       
       audioQueueRef.current.forEach(item => URL.revokeObjectURL(item.url));
@@ -418,7 +426,13 @@ export default function ChatWindow({
     }
 
     // Stop current if any
-    if (audioRef.current) audioRef.current.pause();
+    if (audioRef.current) {
+      audioRef.current.onplay = null;
+      audioRef.current.onended = null;
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current.load();
+    }
     if (abortControllerRef.current) abortControllerRef.current.abort();
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
 
@@ -478,13 +492,13 @@ export default function ChatWindow({
               playNextInQueue();
             }
           } catch (e) {
-            console.error("Error parsing audio chunk", e);
+            console.error("Error parsing audio chunk JSON:", e);
           }
         }
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error("TTS Stream error", err);
+        console.error("TTS Stream error:", err);
         setSpeakingIdx(null);
       }
     }

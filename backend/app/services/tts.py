@@ -12,6 +12,7 @@ SPEECH_SPEED = 1  # Slower than default 1.0
 
 # Global event to stop any ongoing TTS generation across streams
 stop_tts_event = threading.Event()
+tts_generation_lock = threading.Lock()
 
 def clean_text_for_speech(text: str) -> str:
     """Removes citations and other non-spoken markers from text, and formats dates."""
@@ -109,7 +110,7 @@ def stream_tts_wav_chunks(text, cancel_event=None):
     
     if not raw_sentences:
         return
-
+ 
     import soundfile as sf
     import base64
     import json
@@ -127,12 +128,13 @@ def stream_tts_wav_chunks(text, cancel_event=None):
                 if not s_clean:
                     continue
 
-                generator = pipeline(s_clean, voice=voice, speed=SPEECH_SPEED)
-                sentence_audio_chunks = []
-                for gs, ps, audio in generator:
-                    if (cancel_event and cancel_event.is_set()) or stop_tts_event.is_set() or local_stop_signal.is_set():
-                        break
-                    sentence_audio_chunks.append(audio)
+                with tts_generation_lock:
+                    generator = pipeline(s_clean, voice=voice, speed=SPEECH_SPEED)
+                    sentence_audio_chunks = []
+                    for gs, ps, audio in generator:
+                        if (cancel_event and cancel_event.is_set()) or stop_tts_event.is_set() or local_stop_signal.is_set():
+                            break
+                        sentence_audio_chunks.append(audio)
                 
                 if sentence_audio_chunks:
                     full_audio = np.concatenate(sentence_audio_chunks)

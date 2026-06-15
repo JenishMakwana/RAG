@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Auth from './components/Auth';
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
@@ -27,14 +27,14 @@ function App() {
   const [refreshSessions, setRefreshSessions] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const handleLoginSuccess = (newToken, newEmail) => {
+  const handleLoginSuccess = useCallback((newToken, newEmail) => {
     setToken(newToken);
     setEmail(newEmail);
     localStorage.setItem('rag_token', newToken);
     localStorage.setItem('rag_email', newEmail);
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setToken('');
     setEmail('');
     setMessages([]);
@@ -42,26 +42,30 @@ function App() {
     setCurrentView('chat');
     localStorage.removeItem('rag_token');
     localStorage.removeItem('rag_email');
-  };
+  }, []);
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     setCurrentSessionId(generateId());
     setMessages([]);
     setSessionDocuments([]);
     setCurrentView('chat');
     if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
-  };
+  }, []);
 
-  const handleSelectSession = (sessionId) => {
+  const handleSelectSession = useCallback((sessionId) => {
     setCurrentSessionId(sessionId);
     setCurrentView('chat');
     if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
-  };
+  }, []);
 
-  const handleViewLibrary = () => {
+  const handleViewLibrary = useCallback(() => {
     setCurrentView('library');
     if (window.innerWidth <= 768) setIsSidebarCollapsed(true);
-  };
+  }, []);
+
+  const handleRefreshSessions = useCallback(() => {
+    setRefreshSessions(prev => prev + 1);
+  }, []);
 
   if (!token) {
     return <Auth onLoginSuccess={handleLoginSuccess} />;
@@ -112,9 +116,9 @@ function App() {
             messages={messages}
             setMessages={setMessages}
             sessionId={currentSessionId}
-            onFirstMessage={() => setRefreshSessions(prev => prev + 1)}
+            onFirstMessage={handleRefreshSessions}
             setIsUploading={setIsUploading}
-            onUploadSuccess={() => setRefreshSessions(prev => prev + 1)}
+            onUploadSuccess={handleRefreshSessions}
             isSidebarCollapsed={isSidebarCollapsed}
             setIsSidebarCollapsed={setIsSidebarCollapsed}
             sessionDocuments={sessionDocuments}
